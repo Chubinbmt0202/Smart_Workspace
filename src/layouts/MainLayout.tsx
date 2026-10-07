@@ -1,32 +1,64 @@
-import { Flex, Box } from '@radix-ui/themes';
-import Sidebar from '../components/Sidebar';
-import Topbar from '../components/Topbar';
+import { useState } from "react";
+import { Flex, Box, IconButton } from "@radix-ui/themes";
+import { PanelLeftOpen } from "lucide-react";
+import Sidebar from "../components/Sidebar";
+import Topbar from "../components/Topbar";
 
-export default function MainLayout({ children }: { children: React.ReactNode }) {
+export default function MainLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+
   return (
-    <Flex style={{ height: '100vh', width: '100vw', overflow: 'hidden' }}>
-      
-      {/* Khu vực Sidebar bên trái */}
-      <Box style={{ width: '250px', borderRight: '1px solid var(--gray-5)', flexShrink: 0 }}>
-        <Sidebar />
+    <Flex style={{ height: "100%", width: "100%", overflow: "hidden" }}>
+      <Box
+        style={{
+          width: isSidebarOpen ? "270px" : "0px",
+          borderRight: isSidebarOpen ? "1px solid var(--gray-5)" : "none",
+          flexShrink: 0,
+          overflow: "hidden",
+          transition:
+            "width 0.25s cubic-bezier(0.4, 0, 0.2, 1)" 
+        }}
+      >
+        <Box style={{ width: "270px" }}>
+          <Sidebar toggleSidebar={toggleSidebar} />
+        </Box>
       </Box>
 
-      {/* Khu vực chính bên phải */}
-      <Flex direction="column" style={{ flexGrow: 1, overflow: 'hidden' }}>
-        
-        {/* Khu vực Topbar[cite: 2] */}
-        <Box style={{ height: '60px', borderBottom: '1px solid var(--gray-5)', flexShrink: 0 }}>
+      <Flex direction="column" style={{ flexGrow: 1, overflow: "hidden" }}>
+        <Flex
+          align="center"
+          px="4"
+          style={{
+            height: "45px",
+            flexShrink: 0,
+          }}
+        >
+          <IconButton
+            variant="ghost"
+            color="gray"
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            style={{ cursor: "pointer", display: isSidebarOpen ? "none" : "block" }}
+          >
+            <PanelLeftOpen size={18} strokeWidth={1.5} />
+          </IconButton>
           <Topbar />
-        </Box>
-
-        {/* Khu vực Page content[cite: 2] */}
-        <Box style={{ flexGrow: 1, overflowY: 'auto', backgroundColor: 'var(--gray-2)' }}>
-          {/* Bọc nội dung ở giữa để tạo khoảng cách như bản vẽ[cite: 2] */}
-          <Box p="6" style={{ maxWidth: '800px', margin: '0 auto' }}>
+        </Flex>
+        <Box
+          style={{
+            flexGrow: 1,
+            overflowY: "auto",
+            backgroundColor: "var(--gray-2)",
+          }}
+        >
+          <Box p="6" style={{ maxWidth: "800px", margin: "0 auto" }}>
             {children}
           </Box>
         </Box>
-        
       </Flex>
     </Flex>
   );
