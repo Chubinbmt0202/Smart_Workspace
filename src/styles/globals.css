@@ -1,30 +1,66 @@
-:root {
-  --background: #ffffff;
-  --foreground: #37352f;
+/* 1. Reset Box-sizing: Đảm bảo padding/border không làm tăng kích thước phần tử */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
-  --muted: #f7f7f5;
-  --muted-foreground: #787774;
+/* 2. Xóa bỏ margin và padding mặc định của trình duyệt */
+* {
+  margin: 0;
+  padding: 0;
+}
 
-  --border: #e9e9e7;
+/* 3. Thiết lập chiều cao Full-screen (Quan trọng cho layout Sidebar/Topbar) */
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+}
 
-  --hover: #f1f1ef;
-  --active: #e9e9e7;
+/* Ngăn hành vi cuộn nảy (bounce) thừa thãi trên MacOS/iOS đối với app-layout */
+html {
+  overscroll-behavior: none;
+}
 
-  --accent: #2383e2;
+/* 4. Cài đặt Typography cơ bản (Radix Themes sẽ kế thừa) */
+body {
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Nếu dùng Radix, font-family sẽ được ghi đè tự động bởi <Theme> */
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  
+  /* Màu nền dự phòng cho toàn bộ app */
+  background-color: var(--gray-1, #fbfbfc); 
+}
 
-  --danger: #eb5757;
+/* 5. Tối ưu Media & Hình ảnh */
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
 
-  --success: #0f7b6c;
+/* 6. Ngăn lỗi tràn chữ với các từ quá dài */
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  overflow-wrap: break-word;
+}
 
-  --font-sans:
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
-
-    --border: #e9e9e7;
-
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
+/* 7. Xóa style mặc định của button/input gốc để dễ custom */
+input,
+button,
+textarea,
+select {
+  font: inherit;
 }

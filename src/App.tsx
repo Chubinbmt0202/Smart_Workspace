@@ -1,13 +1,12 @@
-import { useState } from 'react'
+import MainLayout from "./layouts/MainLayout"
+import Home from "./pages/Home"
 
 function App() {
 
   return (
-    <>
-      <div className="ticks">
-        <button>Hello mấy cưng</button>
-      </div>
-    </>
+    <MainLayout>
+      <Home />
+    </MainLayout>
   )
 }
 
