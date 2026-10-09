@@ -15,6 +15,7 @@ Smart Workspace là một giao diện quản lý không gian làm việc dạng 
 - Thêm item con vào mỗi nhóm bằng input trực tiếp
 - Thu gọn/mở rộng sidebar để tăng không gian làm việc
 - Topbar hiển thị tiêu đề workspace, trạng thái Private, và các hành động như Share, Link, Favorite
+- Dialog tạo page mới với giao diện tìm kiếm và lựa chọn template: Empty page / Empty database
 - Layout cơ bản với MainLayout và page content container
 - Dùng Radix UI + Lucide React để triển khai giao diện nhất quán
 
@@ -35,6 +36,8 @@ Smart Workspace là một giao diện quản lý không gian làm việc dạng 
 smart_workspace/
 ├─ src/
 │  ├─ components/
+│  │  ├─ Dialog/
+│  │  │  └─ AddDialog.tsx
 │  │  ├─ Sidebar/
 │  │  │  ├─ NavGroup.tsx
 │  │  │  ├─ Sidebar.tsx
@@ -91,6 +94,18 @@ Với mỗi group:
 - hiển thị danh sách children
 - cho phép thêm child mới
 - cho phép kéo thả đối với group
+
+### Dialog tạo page mới
+
+`AddDialog` là component dùng `@radix-ui/themes` để hiển thị popup tạo trang mới. Giao diện gồm:
+
+- thanh tìm kiếm ở phần header
+- hai lựa chọn template chính:
+  - Empty page
+  - Empty database
+- layout dạng card với header rõ ràng, dễ mở rộng cho template mới sau này
+
+Component này đang ở trạng thái UI prototype và có thể được tích hợp vào button "Add Page" hoặc nút "Tạo trang mới" trong tương lai.
 
 ### Topbar
 
