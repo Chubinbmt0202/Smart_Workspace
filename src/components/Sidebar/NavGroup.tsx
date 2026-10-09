@@ -126,7 +126,7 @@ export function NavGroup({ title, children }: NavGroupProps) {
       </Flex>
 
       {isOpen && (
-        <Flex direction="column" pl="4" pt="1" pb="2" gap="1">
+        <Flex direction="column" pl="1" pt="1" pb="2" gap="1">
           {children}
         </Flex>
       )}

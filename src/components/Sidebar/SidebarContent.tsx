@@ -13,7 +13,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { SortableNavItem } from "./Sidebar/SortableNavItem";
+import { SortableNavItem } from "./SortableNavItem";
 
 // 2. COMPONENT CHÍNH
 export default function SidebarContent() {
@@ -38,22 +38,12 @@ export default function SidebarContent() {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        delay: 100,
+        delay: 200,
         tolerance: 5, // Cho phép tay di chuyển lệch 5px trong lúc giữ
       },
     }),
   );
 
-  // Thêm mục con mới vào group
-  const handleAddChild = (parentId: string, childName: string) => {
-    setNavItems((items) =>
-      items.map((item) =>
-        item.id === parentId
-          ? { ...item, children: [...item.children, childName] }
-          : item,
-      ),
-    );
-  };
 
   // Xử lý logic khi người dùng thả chuột (kết thúc kéo)
   const handleDragEnd = (event: DragEndEvent) => {
@@ -108,7 +98,6 @@ export default function SidebarContent() {
                 id={item.id}
                 item={item}
                 key={item.id}
-                onAddChild={handleAddChild}
               />
             ))}
           </Flex>

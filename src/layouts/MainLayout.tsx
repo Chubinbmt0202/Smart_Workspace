@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Flex, Box, IconButton } from "@radix-ui/themes";
 import { PanelLeftOpen } from "lucide-react";
-import Sidebar from "../components/Sidebar";
+import Sidebar from "../components/Sidebar/Sidebar";
 import Topbar from "../components/Topbar";
 
 export default function MainLayout({
