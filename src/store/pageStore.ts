@@ -1,5 +1,8 @@
 import { create } from 'zustand';
 import { useMemo } from 'react';
+import { DEFAULT_SCHEDULE } from '../components/Editor/ScheduleBlock';
+
+export type PageType = 'note' | 'schedule' | 'todo';
 
 export interface PageItem {
   id: string;
@@ -7,7 +10,7 @@ export interface PageItem {
   icon?: string;
   cover?: string;
   content?: string;
-  type?: 'page' | 'database';
+  type?: PageType;
   createdAt?: string;
 }
 
@@ -37,109 +40,102 @@ interface WorkspaceState {
 
 const initialNavItems: NavGroupItem[] = [
   {
-    id: "1",
-    title: "Private",
+    id: "notes",
+    title: "📝 Ghi chú",
     children: [
       {
-        id: "p1",
-        title: "Note của tôi",
+        id: "note-1",
+        title: "Sổ tay ghi chú & Ý tưởng",
         icon: "📝",
         cover: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-        content: `Chào mừng bạn đến với sổ tay cá nhân Smart Workspace!
+        content: `Chào mừng bạn đến với mục Ghi chú (Notes)!
 
-🎯 Mục tiêu công việc trong tuần:
-- [x] Lên ý tưởng giao diện Notion phong cách hiện đại
-- [x] Xây dựng cơ chế tạo trang mới nhanh
-- [x] Tích hợp thanh điều hướng Breadcrumb thông minh
-- [ ] Tích hợp phím tắt nhanh
-
-💡 Ghi chú quan trọng:
-Mọi nội dung bạn gõ ở đây sẽ được lưu trữ và cập nhật đồng bộ tức thì trên thanh điều hướng và Sidebar.`,
-        type: "page",
+💡 Tại đây bạn có thể:
+- Ghi lại mọi ý tưởng, kiến thức và tài liệu quan trọng
+- Sử dụng phím '/' để mở menu chèn tiêu đề, khối trích dẫn hoặc mã code
+- Nhấn phím 'Space' tại dòng trống để nhờ AI hỗ trợ viết tiếp nội dung
+- Nhấp chuột vào bất kỳ khoảng trống nào bên dưới để tiếp tục soạn thảo`,
+        type: "note",
         createdAt: "2026-03-10",
       },
       {
-        id: "p2",
-        title: "Tài liệu mật",
-        icon: "🔒",
-        content: `🔒 BẢO MẬT NỘI BỘ - KHÔNG CHIA SẺ RA NGOÀI
-
-Danh sách các quy chuẩn an toàn:
-1. Xác thực hai yếu tố (2FA) bắt buộc cho tất cả tài khoản.
-2. Mã hóa dữ liệu người dùng tại client và lưu trữ đám mây an toàn.
-3. Kiểm tra định kỳ log truy cập mỗi tuần.`,
-        type: "page",
+        id: "note-2",
+        title: "Tài liệu kiến thức Workspace",
+        icon: "💡",
+        content: `📌 BỘ NGUYÊN TẮC LÀM VIỆC HIỆU QUẢ:
+1. Luôn lập kế hoạch đầu ngày với mục "Lên lịch làm việc".
+2. Chia nhỏ mục tiêu lớn thành các mục "Những việc cần làm".
+3. Ghi chép tài liệu và quyết định quan trọng ngay vào mục "Ghi chú".`,
+        type: "note",
         createdAt: "2026-03-09",
       },
     ],
   },
   {
-    id: "2",
-    title: "Agents",
+    id: "schedule",
+    title: "📅 Lên lịch làm việc",
     children: [
       {
-        id: "p3",
-        title: "Assistant",
-        icon: "🤖",
+        id: "sched-1",
+        title: "Lịch trình làm việc tuần này",
+        icon: "📅",
         cover: "linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%)",
-        content: `🤖 Trợ lý AI Workspace
-
-Tôi có thể giúp bạn:
-- Tự động tóm tắt các cuộc họp
-- Gợi ý cấu trúc dự án và tạo biểu mẫu công việc
-- Phân tích dữ liệu từ bảng biểu và tạo báo cáo tự động`,
-        type: "page",
+        content: JSON.stringify(DEFAULT_SCHEDULE),
+        type: "schedule",
         createdAt: "2026-03-08",
       },
-    ],
-  },
-  {
-    id: "3",
-    title: "Team Workspace",
-    children: [
       {
-        id: "p4",
-        title: "Báo cáo quý 1",
-        icon: "📊",
-        content: "Báo cáo tổng kết hiệu quả dự án và các chỉ số tăng trưởng quý 1.",
-        type: "database",
+        id: "sched-2",
+        title: "Lịch họp & Hạn chót (Deadlines)",
+        icon: "⏰",
+        content: JSON.stringify([
+          {
+            id: 'd1',
+            day: 'Thứ Ba',
+            time: '14:00 - 15:00',
+            title: 'Họp rà soát tiến độ với Product Manager',
+            category: 'Họp (Meeting)',
+            status: 'Đã xong',
+          },
+          {
+            id: 'd2',
+            day: 'Thứ Năm',
+            time: '17:30',
+            title: 'Hạn chót bàn giao phiên bản Beta v1.0',
+            category: 'Deadline',
+            status: 'Chưa bắt đầu',
+          },
+        ]),
+        type: "schedule",
         createdAt: "2026-03-07",
       },
-      {
-        id: "p5",
-        title: "Design Assets",
-        icon: "🎨",
-        cover: "linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%)",
-        content: `🎨 Kho tài nguyên thiết kế UI/UX
-
-1. Bảng màu thương hiệu:
-   - Primary: #6366F1 (Indigo)
-   - Secondary: #8B5CF6 (Purple)
-   - Gray scale: Radix Themes Gray palette
-
-2. Bộ Typography:
-   - Display: Inter / System Font
-   - Code: JetBrains Mono / SF Mono`,
-        type: "page",
-        createdAt: "2026-03-06",
-      },
     ],
   },
   {
-    id: "4",
-    title: "Shared with me",
+    id: "todos",
+    title: "☑️ Những việc cần làm",
     children: [
       {
-        id: "p6",
-        title: "Project Alpha",
-        icon: "📁",
-        content: `📁 Dự án Alpha - Hợp tác liên phòng ban
-
-Kế hoạch phát hành phiên bản Beta vào cuối tháng:
-- Tuần 1: Thiết kế giao diện và luồng người dùng
-- Tuần 2: Tích hợp logic và quản lý trạng thái
-- Tuần 3: Kiểm thử tải và thu thập phản hồi người dùng`,
-        type: "page",
+        id: "todo-1",
+        title: "Nhiệm vụ cần làm hôm nay",
+        icon: "☑️",
+        cover: "linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)",
+        content: `- [x] Hoàn thiện tính năng Ghi chú Notion 🔥
+- [x] Tích hợp Lên lịch làm việc theo khung giờ ⚡
+- [ ] Quản lý Những việc cần làm tương tác với tiến độ
+- [ ] Đánh giá trải nghiệm người dùng
+- [ ] Tối ưu hóa phím tắt thao tác`,
+        type: "todo",
+        createdAt: "2026-03-06",
+      },
+      {
+        id: "todo-2",
+        title: "Mục tiêu trọng tâm tuần",
+        icon: "🎯",
+        content: `- [x] Thiết kế giao diện chuyên nghiệp
+- [ ] Tối ưu hóa phím tắt Enter và Shift+Enter
+- [ ] Hoàn thiện tài liệu hướng dẫn người dùng`,
+        type: "todo",
         createdAt: "2026-03-05",
       },
     ],
@@ -148,20 +144,32 @@ Kế hoạch phát hành phiên bản Beta vào cuối tháng:
 
 export const usePageStore = create<WorkspaceState>((set, get) => ({
   navItems: initialNavItems,
-  activePageId: "p1",
-  history: ["p1"],
+  activePageId: "note-1",
+  history: ["note-1"],
   historyIndex: 0,
 
   addPage: (groupId, initialData) => {
-    const targetGroupId = groupId || get().navItems[0]?.id || "1";
+    const targetGroupId = groupId || get().navItems[0]?.id || "notes";
     const newPageId = `page-${Date.now()}`;
+
+    // Tự động gán type và icon mặc định dựa trên nhóm được chọn
+    let defaultType: PageType = 'note';
+    let defaultIcon = '📝';
+    if (targetGroupId === 'schedule') {
+      defaultType = 'schedule';
+      defaultIcon = '📅';
+    } else if (targetGroupId === 'todos') {
+      defaultType = 'todo';
+      defaultIcon = '☑️';
+    }
+
     const newPage: PageItem = {
       id: newPageId,
       title: initialData?.title ?? "",
-      icon: initialData?.icon ?? "📄",
+      icon: initialData?.icon ?? defaultIcon,
       cover: initialData?.cover,
-      content: initialData?.content ?? "",
-      type: initialData?.type ?? "page",
+      content: initialData?.content ?? (defaultType === 'schedule' ? JSON.stringify(DEFAULT_SCHEDULE) : ""),
+      type: initialData?.type ?? defaultType,
       createdAt: new Date().toISOString(),
     };
 
@@ -247,7 +255,7 @@ export const usePageStore = create<WorkspaceState>((set, get) => ({
       const duplicatedPage: PageItem = {
         ...targetPage,
         id: duplicatedId,
-        title: targetPage.title ? `${targetPage.title} (Copy)` : "Untitled (Copy)",
+        title: targetPage.title ? `${targetPage.title} (Bản sao)` : "Untitled (Bản sao)",
       };
 
       set((s) => {

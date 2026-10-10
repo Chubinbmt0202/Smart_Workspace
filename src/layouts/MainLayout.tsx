@@ -60,7 +60,7 @@ export default function MainLayout({
           <Box
             p="6"
             style={{
-              maxWidth: "800px",
+              maxWidth: "1280px",
               margin: "0 auto",
               width: "100%",
               flexGrow: 1,

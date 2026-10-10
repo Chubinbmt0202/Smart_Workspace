@@ -1,31 +1,24 @@
 import { useEffect, useRef, useMemo, useState } from 'react';
 import {
-  Heading,
   Text,
   Box,
   Flex,
   Button,
   IconButton,
   Popover,
-  Badge,
-  Table,
 } from '@radix-ui/themes';
 import {
   FileText,
-  Table as TableIcon,
   Smile,
   Image as ImageIcon,
   CheckSquare,
-  Sparkles,
   Plus,
-  Trash2,
-  Calendar,
-  Layers,
-  ListTodo,
+  CalendarDays,
 } from 'lucide-react';
 import { usePageStore, useActivePage } from '../store/pageStore';
 import SlashCommandMenu, { getDefaultCommands } from '../components/Editor/SlashCommandMenu';
 import TodoListBlock, { parseTodosFromContent, serializeTodosToContent } from '../components/Editor/TodoListBlock';
+import ScheduleBlock, { DEFAULT_SCHEDULE } from '../components/Editor/ScheduleBlock';
 
 const EMOJI_LIST = [
   '📄', '📝', '💡', '🚀', '🤖', '📊', '🎨', '📁',
@@ -40,21 +33,6 @@ const COVERS = [
   'linear-gradient(to top, #0ba360 0%, #3cba92 100%)',
   'linear-gradient(to right, #434343 0%, black 100%)',
   'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-];
-
-interface DatabaseRow {
-  id: string;
-  name: string;
-  status: 'Not started' | 'In progress' | 'Done';
-  tag: string;
-  date: string;
-}
-
-const DEFAULT_DB_ROWS: DatabaseRow[] = [
-  { id: '1', name: 'Nghiên cứu thị trường', status: 'Done', tag: 'Research', date: '2026-03-01' },
-  { id: '2', name: 'Thiết kế giao diện', status: 'In progress', tag: 'Design', date: '2026-03-05' },
-  { id: '3', name: 'Triển khai Frontend & State', status: 'In progress', tag: 'Dev', date: '2026-03-10' },
-  { id: '4', name: 'Kiểm thử & Tối ưu hiệu năng', status: 'Not started', tag: 'QA', date: '2026-03-15' },
 ];
 
 export default function Home() {
@@ -72,9 +50,6 @@ export default function Home() {
   const [slashPosition, setSlashPosition] = useState({ top: 40, left: 0 });
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  // View mode: 'interactive' (Notion checklist block) or 'raw' (text)
-  const [todoViewMode, setTodoViewMode] = useState<'interactive' | 'raw'>('interactive');
-
   // Focus title automatically if page is freshly created with empty title
   useEffect(() => {
     if (activeData?.page && !activeData.page.title) {
@@ -82,62 +57,69 @@ export default function Home() {
     }
   }, [activeData?.page?.id]);
 
+  if (!activeData) {
+    return (
+      <Flex direction="column" align="center" justify="center" gap="4" py="9" style={{ minHeight: '50vh' }}>
+        <Text size="3" color="gray">Chưa chọn trang nào hoặc danh sách đang trống.</Text>
+        <Button onClick={() => addPage('notes')} variant="solid" color="gray" style={{ cursor: 'pointer' }}>
+          <Plus size={16} /> Tạo trang ghi chú mới
+        </Button>
+      </Flex>
+    );
+  }
+
+  const { page } = activeData;
+  const pageType = page.type || 'note';
+  const isSchedule = pageType === 'schedule';
+  const isTodo = pageType === 'todo';
+  const isNote = pageType === 'note';
+
+  const isEmpty = !page.content && isNote;
+  const hasCover = Boolean(page.cover);
+
   // Check if page content contains todo markdown
   const hasTodos = useMemo(() => {
-    const c = activeData?.page?.content || '';
+    const c = page.content || '';
     return c.includes('- [ ]') || c.includes('- [x]') || c.includes('- [X]');
-  }, [activeData?.page?.content]);
+  }, [page.content]);
 
   // Extract non-todo notes if page has todos
   const nonTodoNotes = useMemo(() => {
     if (!hasTodos) return '';
-    const { preamble } = parseTodosFromContent(activeData?.page?.content || '');
+    const { preamble } = parseTodosFromContent(page.content || '');
     return preamble;
-  }, [hasTodos, activeData?.page?.content]);
+  }, [hasTodos, page.content]);
 
-  // Database rows for database pages: parsed from content if valid JSON, otherwise fallback
-  const dbRows: DatabaseRow[] = useMemo(() => {
-    if (!activeData?.page || activeData.page.type !== 'database') return [];
-    try {
-      const parsed = JSON.parse(activeData.page.content || '');
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    } catch {
-      // not JSON
-    }
-    return DEFAULT_DB_ROWS;
-  }, [activeData?.page?.id, activeData?.page?.content, activeData?.page?.type]);
-
-  const setDbRows = (rows: DatabaseRow[]) => {
-    if (!activeData?.page) return;
-    updatePage(activeData.page.id, { content: JSON.stringify(rows) });
-  };
-
-  // Auto-resize textarea to fit content and avoid scrollbar
+  // Auto-resize textarea to fit content and avoid internal scrollbar
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.max(textareaRef.current.scrollHeight, 220)}px`;
+      textareaRef.current.style.height = `${Math.max(textareaRef.current.scrollHeight, 180)}px`;
     }
-  }, [activeData?.page?.content, todoViewMode]);
+  }, [page.content, pageType]);
+
+  const handleUpdateEditorContent = (newTextareaValue: string) => {
+    if (isTodo || hasTodos) {
+      const { todos } = parseTodosFromContent(page.content || '');
+      const updated = serializeTodosToContent(newTextareaValue, todos);
+      updatePage(page.id, { content: updated });
+    } else {
+      updatePage(page.id, { content: newTextareaValue });
+    }
+  };
 
   // Commands definition
   const allCommands = useMemo(() => {
     return getDefaultCommands(
       (textToInsert) => {
-        if (!activeData?.page || !textareaRef.current) return;
+        if (!textareaRef.current) return;
         const textarea = textareaRef.current;
-        const currentContent = (hasTodos && todoViewMode === 'interactive') ? nonTodoNotes : (activeData.page.content || '');
+        const currentContent = (isTodo || hasTodos) ? nonTodoNotes : (page.content || '');
         const start = slashStartIndex >= 0 ? slashStartIndex : textarea.selectionStart;
         const end = textarea.selectionEnd;
         const newContent = currentContent.slice(0, start) + textToInsert + currentContent.slice(end);
-        
-        if (hasTodos && todoViewMode === 'interactive') {
-          const { todos } = parseTodosFromContent(activeData.page.content || '');
-          const updated = serializeTodosToContent(newContent, todos);
-          updatePage(activeData.page.id, { content: updated });
-        } else {
-          updatePage(activeData.page.id, { content: newContent });
-        }
+
+        handleUpdateEditorContent(newContent);
         setSlashMenuOpen(false);
 
         setTimeout(() => {
@@ -146,17 +128,26 @@ export default function Home() {
           textarea.setSelectionRange(newCursor, newCursor);
         }, 0);
       },
+      // Chuyển sang Lên lịch làm việc
       () => {
-        if (!activeData?.page) return;
-        updatePage(activeData.page.id, {
-          type: 'database',
-          icon: '📊',
-          content: JSON.stringify(DEFAULT_DB_ROWS),
+        updatePage(page.id, {
+          type: 'schedule',
+          icon: '📅',
+          content: JSON.stringify(DEFAULT_SCHEDULE),
+        });
+        setSlashMenuOpen(false);
+      },
+      // Chuyển sang Những việc cần làm
+      () => {
+        updatePage(page.id, {
+          type: 'todo',
+          icon: '☑️',
+          content: `- [ ] Công việc mới cần hoàn thành\n`,
         });
         setSlashMenuOpen(false);
       }
     );
-  }, [activeData?.page?.id, slashStartIndex]);
+  }, [page.id, page.content, isTodo, hasTodos, nonTodoNotes, slashStartIndex]);
 
   // Filter commands by search query
   const filteredCommands = useMemo(() => {
@@ -169,22 +160,6 @@ export default function Home() {
         cmd.keywords.some((k) => k.toLowerCase().includes(q))
     );
   }, [allCommands, slashQuery]);
-
-  if (!activeData) {
-    return (
-      <Flex direction="column" align="center" justify="center" gap="4" py="9" style={{ minHeight: '50vh' }}>
-        <Text size="3" color="gray">Chưa chọn trang nào hoặc danh sách đang trống.</Text>
-        <Button onClick={() => addPage()} variant="solid" color="gray" style={{ cursor: 'pointer' }}>
-          <Plus size={16} /> Tạo trang mới ngay
-        </Button>
-      </Flex>
-    );
-  }
-
-  const { page } = activeData;
-  const isDatabase = page.type === 'database';
-  const isEmpty = !page.content && !isDatabase;
-  const hasCover = Boolean(page.cover);
 
   const handleTitleChange = (newTitle: string) => {
     updatePage(page.id, { title: newTitle });
@@ -208,72 +183,39 @@ export default function Home() {
     updatePage(page.id, { cover: nextCover });
   };
 
-  const handleApplyTemplate = (type: 'empty' | 'icon' | 'database' | 'meeting' | 'todo') => {
-    if (type === 'empty') {
-      updatePage(page.id, { content: '' });
-      setTimeout(() => textareaRef.current?.focus(), 0);
-    } else if (type === 'icon') {
-      const randomIcon = EMOJI_LIST[Math.floor(Math.random() * EMOJI_LIST.length)];
+  // Chọn 1 trong 3 mẫu chính khi trang rỗng
+  const handleApplyTemplate = (type: 'note' | 'schedule' | 'todo') => {
+    if (type === 'note') {
       updatePage(page.id, {
-        icon: randomIcon,
+        type: 'note',
+        icon: '📝',
+        title: page.title || 'Ghi chú mới',
         content: '',
       });
       setTimeout(() => textareaRef.current?.focus(), 0);
-    } else if (type === 'database') {
+    } else if (type === 'schedule') {
       updatePage(page.id, {
-        icon: '📊',
-        type: 'database',
-        title: page.title || 'Bảng dữ liệu công việc',
-        content: JSON.stringify(DEFAULT_DB_ROWS),
-      });
-    } else if (type === 'meeting') {
-      updatePage(page.id, {
-        icon: '📝',
-        title: page.title || 'Biên bản cuộc họp (Meeting Notes)',
-        content: `📅 Ngày: ${new Date().toLocaleDateString('vi-VN')}
-👥 Thành viên tham gia: Team Core, Product Manager
-
-🎯 Mục tiêu cuộc họp:
-- Rà soát tiến độ dự án tuần hiện tại
-- Giải quyết các điểm nghẽn kỹ thuật
-
-📝 Nội dung trao đổi:
-1. Thống nhất cơ chế tạo trang mới chuẩn phong cách Notion
-2. Tối ưu UX/UI với visual mượt mà
-
-✅ Kế hoạch hành động:
-- [ ] Hoàn thiện luồng tạo trang
-- [ ] Kiểm thử tương tác trên trình duyệt`,
+        type: 'schedule',
+        icon: '📅',
+        title: page.title || 'Lịch làm việc & Kế hoạch',
+        content: JSON.stringify(DEFAULT_SCHEDULE),
       });
     } else if (type === 'todo') {
-      setTodoViewMode('interactive');
       updatePage(page.id, {
-        icon: '📋',
-        title: page.title || 'Kế hoạch công việc (Tasks Tracker)',
-        content: `- [x] Tạo cơ chế tạo trang Notion 🔥
-- [x] Kết nối kho lưu trữ và thanh điều hướng Breadcrumb
-- [x] Thiết kế giao diện TodoList tương tác chuẩn Notion ⚡
-- [ ] Tích hợp phím tắt nhanh và kiểm thử tải
-- [ ] Hoàn thiện tài liệu hướng dẫn người dùng`,
+        type: 'todo',
+        icon: '☑️',
+        title: page.title || 'Danh sách việc cần làm',
+        content: `- [x] Nhiệm vụ mẫu đã hoàn thành 🔥
+- [ ] Nhiệm vụ quan trọng cần làm hôm nay ⚡
+- [ ] Nhiệm vụ tiếp theo trong tuần`,
       });
     }
   };
 
-  const addDbRow = () => {
-    const newRow: DatabaseRow = {
-      id: `${Date.now()}`,
-      name: 'Nhiệm vụ mới',
-      status: 'Not started',
-      tag: 'General',
-      date: new Date().toISOString().split('T')[0],
-    };
-    setDbRows([...dbRows, newRow]);
-  };
-
   // Focus the editor when clicking on any empty space below the content
   const handleFocusEditor = (e: React.MouseEvent) => {
+    if (isSchedule) return;
     const target = e.target as HTMLElement;
-    // Do not interfere if user clicked an interactive control
     if (
       target.closest('button') ||
       target.closest('input') ||
@@ -294,16 +236,6 @@ export default function Home() {
     }
   };
 
-  const handleUpdateEditorContent = (newTextareaValue: string) => {
-    if (hasTodos && todoViewMode === 'interactive') {
-      const { todos } = parseTodosFromContent(page.content || '');
-      const updated = serializeTodosToContent(newTextareaValue, todos);
-      updatePage(page.id, { content: updated });
-    } else {
-      updatePage(page.id, { content: newTextareaValue });
-    }
-  };
-
   // Textarea input and slash trigger detection
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
@@ -319,7 +251,6 @@ export default function Home() {
       const charBeforeSlash = lastSlashIndex > 0 ? textBeforeCursor[lastSlashIndex - 1] : '\n';
       const textAfterSlash = textBeforeCursor.slice(lastSlashIndex + 1);
 
-      // Slash is valid if at line start or preceded by space, and no newline between / and cursor
       if (
         (charBeforeSlash === '\n' || charBeforeSlash === ' ') &&
         !textAfterSlash.includes('\n') &&
@@ -330,7 +261,6 @@ export default function Home() {
         setSlashStartIndex(lastSlashIndex);
         setSelectedIndex(0);
 
-        // Approximate vertical position based on line number
         const linesBefore = textBeforeCursor.split('\n').length;
         const top = Math.min(linesBefore * 27 + 8, 450);
         setSlashPosition({ top, left: 8 });
@@ -386,7 +316,6 @@ export default function Home() {
       const value = textarea.value;
       const cursor = textarea.selectionStart;
 
-      // Trích xuất dòng hiện tại nơi con trỏ đang đứng
       const textBeforeCursor = value.slice(0, cursor);
       const textAfterCursor = value.slice(cursor);
       const lineStartIndex = textBeforeCursor.lastIndexOf('\n') + 1;
@@ -394,7 +323,6 @@ export default function Home() {
       const lineEndIndex = lineEndRelative === -1 ? value.length : cursor + lineEndRelative;
       const currentLine = value.slice(lineStartIndex, lineEndIndex);
 
-      // Nhận diện kiểu block của dòng hiện tại:
       const todoMatch = currentLine.match(/^(\s*-\s*\[([ xX])\]\s*)/);
       const bulletMatch = currentLine.match(/^(\s*[-*•]\s+)/);
       const numberMatch = currentLine.match(/^(\s*(\d+)\.\s+)/);
@@ -437,7 +365,6 @@ export default function Home() {
       if (!e.shiftKey) {
         e.preventDefault();
 
-        // Danh sách cũ giữ nguyên 100%, chèn một dòng mới là văn bản thường (không mang tiền tố)
         const inserted = '\n';
         const newText = textBeforeCursor + inserted + textAfterCursor;
         handleUpdateEditorContent(newText);
@@ -465,7 +392,7 @@ export default function Home() {
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
-        cursor: isDatabase ? 'default' : 'text',
+        cursor: 'text',
       }}
     >
       {/* Cover Image */}
@@ -499,43 +426,84 @@ export default function Home() {
         </Box>
       )}
 
-      {/* Top action triggers: Add Icon / Add Cover */}
-      <Flex gap="2" mb="2" align="center" style={{ opacity: 0.85, cursor: 'default' }}>
-        <Popover.Root>
-          <Popover.Trigger>
-            <Button size="1" variant="ghost" color="gray" style={{ cursor: 'pointer', padding: '4px 6px' }}>
-              <Smile size={14} />
-              {page.icon ? 'Đổi biểu tượng' : 'Thêm biểu tượng'}
-            </Button>
-          </Popover.Trigger>
-          <Popover.Content size="1" style={{ width: '260px' }}>
-            <Text size="1" color="gray" mb="2" weight="medium">Chọn biểu tượng Notion</Text>
-            <Flex wrap="wrap" gap="2">
-              {EMOJI_LIST.map((emoji) => (
-                <IconButton
-                  key={emoji}
-                  variant="ghost"
-                  size="2"
-                  onClick={() => handleIconSelect(emoji)}
-                  style={{ cursor: 'pointer', fontSize: '18px' }}
-                >
-                  {emoji}
-                </IconButton>
-              ))}
-            </Flex>
-          </Popover.Content>
-        </Popover.Root>
+      {/* Top action triggers & 3 Chức năng Switcher */}
+      <Flex justify="between" align="center" mb="2" wrap="wrap" gap="2" style={{ cursor: 'default' }}>
+        <Flex gap="2" align="center">
+          <Popover.Root>
+            <Popover.Trigger>
+              <Button size="1" variant="ghost" color="gray" style={{ cursor: 'pointer', padding: '4px 6px' }}>
+                <Smile size={14} />
+                {page.icon ? 'Đổi biểu tượng' : 'Thêm biểu tượng'}
+              </Button>
+            </Popover.Trigger>
+            <Popover.Content size="1" style={{ width: '260px' }}>
+              <Text size="1" color="gray" mb="2" weight="medium">Chọn biểu tượng Notion</Text>
+              <Flex wrap="wrap" gap="2">
+                {EMOJI_LIST.map((emoji) => (
+                  <IconButton
+                    key={emoji}
+                    variant="ghost"
+                    size="2"
+                    onClick={() => handleIconSelect(emoji)}
+                    style={{ cursor: 'pointer', fontSize: '18px' }}
+                  >
+                    {emoji}
+                  </IconButton>
+                ))}
+              </Flex>
+            </Popover.Content>
+          </Popover.Root>
 
-        <Button
-          size="1"
-          variant="ghost"
-          color="gray"
-          onClick={handleToggleCover}
-          style={{ cursor: 'pointer', padding: '4px 6px' }}
-        >
-          <ImageIcon size={14} />
-          {hasCover ? 'Xóa ảnh bìa' : 'Thêm ảnh bìa'}
-        </Button>
+          <Button
+            size="1"
+            variant="ghost"
+            color="gray"
+            onClick={handleToggleCover}
+            style={{ cursor: 'pointer', padding: '4px 6px' }}
+          >
+            <ImageIcon size={14} />
+            {hasCover ? 'Xóa ảnh bìa' : 'Thêm ảnh bìa'}
+          </Button>
+        </Flex>
+
+        {/* 3 Chức năng chính Switcher */}
+        <Flex align="center" gap="1">
+          <Button
+            size="1"
+            variant={isNote ? 'solid' : 'ghost'}
+            color={isNote ? 'blue' : 'gray'}
+            onClick={() => {
+              const currentContent = page.content || '';
+              const isJson = currentContent.trim().startsWith('[') || currentContent.trim().startsWith('{');
+              updatePage(page.id, {
+                type: 'note',
+                icon: page.icon === '📅' || page.icon === '☑️' ? '📝' : page.icon,
+                content: isJson ? '' : currentContent,
+              });
+            }}
+            style={{ cursor: 'pointer', height: '24px', fontSize: '12px' }}
+          >
+            <FileText size={12} /> 1. Ghi chú
+          </Button>
+          <Button
+            size="1"
+            variant={isSchedule ? 'solid' : 'ghost'}
+            color={isSchedule ? 'indigo' : 'gray'}
+            onClick={() => updatePage(page.id, { type: 'schedule', icon: '📅', content: page.content || JSON.stringify(DEFAULT_SCHEDULE) })}
+            style={{ cursor: 'pointer', height: '24px', fontSize: '12px' }}
+          >
+            <CalendarDays size={12} /> 2. Lên lịch
+          </Button>
+          <Button
+            size="1"
+            variant={isTodo ? 'solid' : 'ghost'}
+            color={isTodo ? 'amber' : 'gray'}
+            onClick={() => updatePage(page.id, { type: 'todo', icon: '☑️' })}
+            style={{ cursor: 'pointer', height: '24px', fontSize: '12px' }}
+          >
+            <CheckSquare size={12} /> 3. Việc cần làm
+          </Button>
+        </Flex>
       </Flex>
 
       {/* Page Icon Banner */}
@@ -575,7 +543,7 @@ export default function Home() {
         </Popover.Root>
       )}
 
-      {/* Notion Page Title: Large, borderless, live editing */}
+      {/* Page Title */}
       <Box mb="5">
         <input
           ref={titleInputRef}
@@ -598,193 +566,83 @@ export default function Home() {
         />
       </Box>
 
-      {/* Notion-style Quick Template Starters if page is completely empty */}
+      {/* 3 Mẫu khởi đầu lớn khi trang mới hoàn toàn */}
       {isEmpty && (
         <Box mb="6" style={{ cursor: 'default' }}>
-          <Text size="2" color="gray" mb="3" as="p">
-            Chọn mẫu để bắt đầu hoặc gõ văn bản ngay bên dưới:
+          <Text size="2" color="gray" mb="3" as="p" weight="medium">
+            Chọn 1 trong 3 chức năng chính để bắt đầu:
           </Text>
-          <Flex wrap="wrap" gap="2">
+          <Flex wrap="wrap" gap="3">
             <Button
               variant="surface"
-              color="gray"
+              color="blue"
               size="2"
-              onClick={() => handleApplyTemplate('empty')}
-              style={{ cursor: 'pointer' }}
+              onClick={() => handleApplyTemplate('note')}
+              style={{ cursor: 'pointer', padding: '12px 16px' }}
             >
-              <FileText size={15} /> Trang trống (Empty page)
+              <FileText size={16} /> 📝 Ghi chú
             </Button>
 
             <Button
               variant="surface"
-              color="gray"
+              color="indigo"
               size="2"
-              onClick={() => handleApplyTemplate('icon')}
-              style={{ cursor: 'pointer' }}
+              onClick={() => handleApplyTemplate('schedule')}
+              style={{ cursor: 'pointer', padding: '12px 16px' }}
             >
-              <Sparkles size={15} /> Trang có icon ngẫu nhiên
+              <CalendarDays size={16} /> 📅 Lên lịch làm việc
             </Button>
 
             <Button
               variant="surface"
-              color="gray"
-              size="2"
-              onClick={() => handleApplyTemplate('database')}
-              style={{ cursor: 'pointer' }}
-            >
-              <TableIcon size={15} /> Bảng cơ sở dữ liệu (Table)
-            </Button>
-
-            <Button
-              variant="surface"
-              color="gray"
-              size="2"
-              onClick={() => handleApplyTemplate('meeting')}
-              style={{ cursor: 'pointer' }}
-            >
-              <Calendar size={15} /> Mẫu Họp (Meeting Notes)
-            </Button>
-
-            <Button
-              variant="surface"
-              color="gray"
+              color="amber"
               size="2"
               onClick={() => handleApplyTemplate('todo')}
-              style={{ cursor: 'pointer' }}
+              style={{ cursor: 'pointer', padding: '12px 16px' }}
             >
-              <CheckSquare size={15} /> Danh sách công việc (To-do)
+              <CheckSquare size={16} /> ☑️ Những việc cần làm (To-do)
             </Button>
           </Flex>
         </Box>
       )}
 
-      {/* Content View: Database View */}
-      {isDatabase ? (
+      {/* ========================================================
+          HIỂN THỊ NỘI DUNG THEO 3 CHỨC NĂNG CHÍNH
+          ======================================================== */}
+
+      {/* 1. CHỨC NĂNG: LÊN LỊCH LÀM VIỆC (SCHEDULE) */}
+      {isSchedule && (
         <Box style={{ cursor: 'default' }}>
-          <Flex justify="between" align="center" mb="3">
-            <Flex gap="2" align="center">
-              <Layers size={16} color="var(--gray-9)" />
-              <Heading size="3">Bảng dữ liệu (Table Database)</Heading>
-            </Flex>
-            <Button size="1" variant="soft" color="gray" onClick={addDbRow} style={{ cursor: 'pointer' }}>
-              <Plus size={14} /> Thêm hàng mới
-            </Button>
-          </Flex>
-
-          <Box style={{ border: '1px solid var(--gray-5)', borderRadius: '6px', overflow: 'hidden' }}>
-            <Table.Root variant="surface">
-              <Table.Header>
-                <Table.Row>
-                  <Table.ColumnHeaderCell>Tên công việc</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Trạng thái</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Nhãn (Tag)</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Ngày</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell></Table.ColumnHeaderCell>
-                </Table.Row>
-              </Table.Header>
-              <Table.Body>
-                {dbRows.map((row) => (
-                  <Table.Row key={row.id}>
-                    <Table.RowHeaderCell>
-                      <input
-                        type="text"
-                        value={row.name}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setDbRows(dbRows.map((r) => (r.id === row.id ? { ...r, name: val } : r)));
-                        }}
-                        style={{
-                          border: 'none',
-                          background: 'transparent',
-                          width: '100%',
-                          outline: 'none',
-                          color: 'var(--gray-12)',
-                        }}
-                      />
-                    </Table.RowHeaderCell>
-                    <Table.Cell>
-                      <Badge
-                        color={
-                          row.status === 'Done' ? 'green' : row.status === 'In progress' ? 'blue' : 'gray'
-                        }
-                        variant="soft"
-                      >
-                        {row.status}
-                      </Badge>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Badge color="purple" variant="outline">
-                        {row.tag}
-                      </Badge>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Text size="1" color="gray">
-                        {row.date}
-                      </Text>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <IconButton
-                        size="1"
-                        variant="ghost"
-                        color="red"
-                        onClick={() => setDbRows(dbRows.filter((r) => r.id !== row.id))}
-                        style={{ cursor: 'pointer' }}
-                      >
-                        <Trash2 size={13} />
-                      </IconButton>
-                    </Table.Cell>
-                  </Table.Row>
-                ))}
-              </Table.Body>
-            </Table.Root>
-          </Box>
+          <ScheduleBlock
+            content={page.content || JSON.stringify(DEFAULT_SCHEDULE)}
+            onChange={(newContent) => updatePage(page.id, { content: newContent })}
+          />
         </Box>
-      ) : (
-        /* Content View: Rich Text / Markdown Editor with Interactive Todo List */
-        <Box style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-          {/* Mode Switcher if page contains To-do items */}
-          {hasTodos && (
-            <Flex justify="between" align="center" mb="3" style={{ cursor: 'default' }}>
-              <Flex align="center" gap="2">
-                <ListTodo size={16} color="var(--blue-9)" />
-                <Text size="2" weight="medium" color="gray">
-                  Chế độ hiển thị:
-                </Text>
-              </Flex>
-              <Flex gap="1">
-                <Button
-                  size="1"
-                  variant={todoViewMode === 'interactive' ? 'solid' : 'ghost'}
-                  color="blue"
-                  onClick={() => setTodoViewMode('interactive')}
-                  style={{ cursor: 'pointer', height: '24px' }}
-                >
-                  <CheckSquare size={13} /> Checklist tương tác
-                </Button>
-                <Button
-                  size="1"
-                  variant={todoViewMode === 'raw' ? 'solid' : 'ghost'}
-                  color="gray"
-                  onClick={() => setTodoViewMode('raw')}
-                  style={{ cursor: 'pointer', height: '24px' }}
-                >
-                  <FileText size={13} /> Văn bản thuần
-                </Button>
-              </Flex>
-            </Flex>
-          )}
+      )}
 
-          {/* Interactive Notion Todo List Block */}
-          {hasTodos && todoViewMode === 'interactive' && (
+      {/* 2. CHỨC NĂNG: NHỮNG VIỆC CẦN LÀM (TO-DO LIST) */}
+      {isTodo && (
+        <Box style={{ cursor: 'default' }}>
+          <TodoListBlock
+            content={page.content || ''}
+            onChange={(newContent) => updatePage(page.id, { content: newContent })}
+          />
+        </Box>
+      )}
+
+      {/* 3. CHỨC NĂNG: GHI CHÚ (NOTES) HOẶC VÙNG SOẠN THẢO VĂN BẢN (Ẩn khi đang xem lịch để không hiển thị raw JSON) */}
+      {!isSchedule && (
+        <Box style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+          {/* Trường hợp trang Note có sẵn checklist hoặc to-do xen kẽ */}
+          {isNote && hasTodos && (
             <TodoListBlock
               content={page.content || ''}
               onChange={(newContent) => updatePage(page.id, { content: newContent })}
             />
           )}
 
-          {/* Textarea Editor: Active in text mode, raw mode, or as continuous writing area below checklist */}
-          <Box style={{ position: 'relative', marginTop: hasTodos && todoViewMode === 'interactive' ? '8px' : '0px' }}>
-            {/* Floating Slash Command Menu */}
+          {/* Khung soạn thảo văn bản ghi chú với Slash commands */}
+          <Box style={{ position: 'relative' }}>
             <SlashCommandMenu
               isOpen={slashMenuOpen}
               query={slashQuery}
@@ -801,17 +659,17 @@ export default function Home() {
 
             <textarea
               ref={textareaRef}
-              value={hasTodos && todoViewMode === 'interactive' ? nonTodoNotes : (page.content || '')}
+              value={(isTodo || hasTodos) ? nonTodoNotes : (page.content || '')}
               onChange={handleTextareaChange}
               onKeyDown={handleTextareaKeyDown}
               placeholder={
-                hasTodos && todoViewMode === 'interactive'
-                  ? "Nhấp để viết thêm ghi chú bên dưới danh sách hoặc gõ '/'..."
+                isTodo || hasTodos
+                  ? "Thêm ghi chú bổ sung cho danh sách việc cần làm hoặc dùng '/'..."
                   : "Press 'space' for AI or '/' for commands"
               }
               style={{
                 width: '100%',
-                minHeight: '180px',
+                minHeight: '200px',
                 border: 'none',
                 outline: 'none',
                 resize: 'none',
@@ -825,7 +683,7 @@ export default function Home() {
             />
           </Box>
 
-          {/* Stretchable empty area below content that focuses editor when clicked */}
+          {/* Vùng trống bên dưới - click vào để kích hoạt con trỏ soạn thảo */}
           <Box
             style={{
               flexGrow: 1,

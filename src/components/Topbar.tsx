@@ -1,5 +1,5 @@
 import { Flex, Text, Button, IconButton, DropdownMenu, Tooltip } from '@radix-ui/themes';
-import { 
+import {
   Lock,
   ChevronDown,
   ChevronLeft,
@@ -46,19 +46,19 @@ export default function Topbar() {
   };
 
   return (
-    <Flex 
-      justify="between" 
-      align="center" 
-      px="3" 
-      style={{ 
-        height: '45px', 
-        width: '100%', 
+    <Flex
+      justify="between"
+      align="center"
+      px="3"
+      style={{
+        height: '45px',
+        width: '100%',
         userSelect: 'none',
       }}
     >
       {/* ===== BÊN TRÁI: Thanh điều hướng (Navigation Bar / Breadcrumb) ===== */}
       <Flex align="center" gap="1" style={{ overflow: 'hidden' }}>
-        
+
         {/* Lịch sử điều hướng: Back & Forward */}
         <Flex align="center" gap="1" mr="1">
           <Tooltip content="Quay lại trang trước">
@@ -101,13 +101,13 @@ export default function Topbar() {
         {/* Breadcrumb Trail: Workspace -> Group -> Page */}
         <Flex align="center" gap="1" style={{ fontSize: '13px', color: 'var(--gray-11)' }}>
           {/* Root Workspace */}
-          <Flex 
-            align="center" 
-            gap="1" 
-            px="1" 
-            py="1" 
-            style={{ 
-              borderRadius: '4px', 
+          <Flex
+            align="center"
+            gap="1"
+            px="1"
+            py="1"
+            style={{
+              borderRadius: '4px',
               cursor: 'pointer',
               transition: 'background 0.15s ease',
             }}
@@ -121,13 +121,13 @@ export default function Topbar() {
           {/* Group Name với Menu chuyển nhanh trang trong nhóm */}
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
-              <Flex 
-                align="center" 
-                gap="1" 
-                px="1" 
-                py="1" 
-                style={{ 
-                  borderRadius: '4px', 
+              <Flex
+                align="center"
+                gap="1"
+                px="1"
+                py="1"
+                style={{
+                  borderRadius: '4px',
                   cursor: 'pointer',
                   transition: 'background 0.15s ease',
                 }}
@@ -158,23 +158,23 @@ export default function Topbar() {
           <Text size="1" color="gray" style={{ opacity: 0.5 }}>/</Text>
 
           {/* Active Page (Tiêu đề trang hiện tại) */}
-          <Flex 
-            align="center" 
-            gap="1" 
-            px="2" 
-            py="1" 
-            style={{ 
-              borderRadius: '4px', 
+          <Flex
+            align="center"
+            gap="1"
+            px="2"
+            py="1"
+            style={{
+              borderRadius: '4px',
               cursor: 'pointer',
               maxWidth: '220px',
               overflow: 'hidden',
             }}
           >
             <Text size="1">{icon}</Text>
-            <Text 
-              size="1" 
-              weight="medium" 
-              style={{ 
+            <Text
+              size="1"
+              weight="medium"
+              style={{
                 color: 'var(--gray-12)',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -193,7 +193,7 @@ export default function Topbar() {
 
       {/* ===== BÊN PHẢI: Trạng thái lưu & Các hành động ===== */}
       <Flex align="center" gap="2">
-        
+
         {/* Trạng thái đã lưu */}
         <Flex align="center" gap="1" mr="1">
           <Check size={12} color="var(--green-9)" />
@@ -203,10 +203,10 @@ export default function Topbar() {
         </Flex>
 
         {/* Nút Share */}
-        <Button 
-          variant="ghost" 
-          color="gray" 
-          size="1" 
+        <Button
+          variant="ghost"
+          color="gray"
+          size="1"
           style={{ cursor: 'pointer', height: '28px', color: 'var(--gray-11)', padding: '0 8px' }}
         >
           <Lock size={13} />
@@ -215,30 +215,30 @@ export default function Topbar() {
 
         {/* Copy Link */}
         <Tooltip content={copied ? 'Đã copy link!' : 'Sao chép liên kết trang'}>
-          <IconButton 
-            variant="ghost" 
-            color={copied ? 'green' : 'gray'} 
-            size="1" 
+          <IconButton
+            variant="ghost"
+            color={copied ? 'green' : 'gray'}
+            size="1"
             onClick={handleCopyLink}
             style={{ cursor: 'pointer' }}
           >
             {copied ? <Check size={14} /> : <Link2 size={14} />}
           </IconButton>
         </Tooltip>
-        
+
         {/* Star / Favorite */}
         <Tooltip content={isStarred ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}>
-          <IconButton 
-            variant="ghost" 
-            color={isStarred ? 'amber' : 'gray'} 
-            size="1" 
+          <IconButton
+            variant="ghost"
+            color={isStarred ? 'amber' : 'gray'}
+            size="1"
             onClick={() => setIsStarred(!isStarred)}
             style={{ cursor: 'pointer' }}
           >
             <Star size={14} fill={isStarred ? 'currentColor' : 'none'} />
           </IconButton>
         </Tooltip>
-        
+
         {/* Menu More Options */}
         <DropdownMenu.Root>
           <DropdownMenu.Trigger>
@@ -254,21 +254,34 @@ export default function Topbar() {
                     <Copy size={13} /> Nhân bản trang (Duplicate)
                   </Flex>
                 </DropdownMenu.Item>
-                <DropdownMenu.Item 
-                  onClick={() => 
-                    updatePage(pageId, { 
-                      type: activeData?.page.type === 'database' ? 'page' : 'database' 
-                    })
-                  }
-                >
-                  <Flex align="center" gap="2">
-                    {activeData?.page.type === 'database' ? (
-                      <><FileText size={13} /> Chuyển sang dạng Văn bản (Document)</>
-                    ) : (
-                      <><TableIcon size={13} /> Chuyển sang Bảng dữ liệu (Database)</>
-                    )}
-                  </Flex>
-                </DropdownMenu.Item>
+                <DropdownMenu.Sub>
+                  <DropdownMenu.SubTrigger>
+                    <Flex align="center" gap="2">
+                      <FileText size={13} /> Đổi loại trang (3 chức năng)
+                    </Flex>
+                  </DropdownMenu.SubTrigger>
+                  <DropdownMenu.SubContent>
+                    <DropdownMenu.Item onClick={() => {
+                      const currentContent = activeData?.page.content || '';
+                      const isJson = currentContent.trim().startsWith('[') || currentContent.trim().startsWith('{');
+                      updatePage(pageId, { type: 'note', icon: '📝', content: isJson ? '' : currentContent });
+                    }}>
+                      <Flex align="center" gap="2">
+                        <FileText size={13} /> 1. Ghi chú
+                      </Flex>
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item onClick={() => updatePage(pageId, { type: 'schedule', icon: '📅' })}>
+                      <Flex align="center" gap="2">
+                        <TableIcon size={13} /> 2. Lên lịch làm việc
+                      </Flex>
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item onClick={() => updatePage(pageId, { type: 'todo', icon: '☑️' })}>
+                      <Flex align="center" gap="2">
+                        <Check size={13} /> 3. Những việc cần làm (To-do)
+                      </Flex>
+                    </DropdownMenu.Item>
+                  </DropdownMenu.SubContent>
+                </DropdownMenu.Sub>
                 <DropdownMenu.Separator />
                 <DropdownMenu.Item color="red" onClick={() => deletePage(pageId)}>
                   <Flex align="center" gap="2">
