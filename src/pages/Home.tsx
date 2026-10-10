@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { usePageStore, useActivePage } from '../store/pageStore';
 import SlashCommandMenu, { getDefaultCommands } from '../components/Editor/SlashCommandMenu';
-import TodoListBlock from '../components/Editor/TodoListBlock';
+import TodoListBlock, { parseTodosFromContent, serializeTodosToContent } from '../components/Editor/TodoListBlock';
 
 const EMOJI_LIST = [
   '📄', '📝', '💡', '🚀', '🤖', '📊', '🎨', '📁',
@@ -88,6 +88,13 @@ export default function Home() {
     return c.includes('- [ ]') || c.includes('- [x]') || c.includes('- [X]');
   }, [activeData?.page?.content]);
 
+  // Extract non-todo notes if page has todos
+  const nonTodoNotes = useMemo(() => {
+    if (!hasTodos) return '';
+    const { preamble } = parseTodosFromContent(activeData?.page?.content || '');
+    return preamble;
+  }, [hasTodos, activeData?.page?.content]);
+
   // Database rows for database pages: parsed from content if valid JSON, otherwise fallback
   const dbRows: DatabaseRow[] = useMemo(() => {
     if (!activeData?.page || activeData.page.type !== 'database') return [];
@@ -105,17 +112,32 @@ export default function Home() {
     updatePage(activeData.page.id, { content: JSON.stringify(rows) });
   };
 
+  // Auto-resize textarea to fit content and avoid scrollbar
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.max(textareaRef.current.scrollHeight, 220)}px`;
+    }
+  }, [activeData?.page?.content, todoViewMode]);
+
   // Commands definition
   const allCommands = useMemo(() => {
     return getDefaultCommands(
       (textToInsert) => {
         if (!activeData?.page || !textareaRef.current) return;
         const textarea = textareaRef.current;
-        const currentContent = activeData.page.content || '';
+        const currentContent = (hasTodos && todoViewMode === 'interactive') ? nonTodoNotes : (activeData.page.content || '');
         const start = slashStartIndex >= 0 ? slashStartIndex : textarea.selectionStart;
         const end = textarea.selectionEnd;
         const newContent = currentContent.slice(0, start) + textToInsert + currentContent.slice(end);
-        updatePage(activeData.page.id, { content: newContent });
+        
+        if (hasTodos && todoViewMode === 'interactive') {
+          const { todos } = parseTodosFromContent(activeData.page.content || '');
+          const updated = serializeTodosToContent(newContent, todos);
+          updatePage(activeData.page.id, { content: updated });
+        } else {
+          updatePage(activeData.page.id, { content: newContent });
+        }
         setSlashMenuOpen(false);
 
         setTimeout(() => {
@@ -248,11 +270,46 @@ export default function Home() {
     setDbRows([...dbRows, newRow]);
   };
 
+  // Focus the editor when clicking on any empty space below the content
+  const handleFocusEditor = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    // Do not interfere if user clicked an interactive control
+    if (
+      target.closest('button') ||
+      target.closest('input') ||
+      target.closest('textarea') ||
+      target.closest('.todo-item-row') ||
+      target.closest('table') ||
+      target.closest('[role="dialog"]') ||
+      target.closest('[role="menu"]') ||
+      target.closest('[data-radix-popper-content-wrapper]')
+    ) {
+      return;
+    }
+
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+      const length = textareaRef.current.value.length;
+      textareaRef.current.setSelectionRange(length, length);
+    }
+  };
+
+  const handleUpdateEditorContent = (newTextareaValue: string) => {
+    if (hasTodos && todoViewMode === 'interactive') {
+      const { todos } = parseTodosFromContent(page.content || '');
+      const updated = serializeTodosToContent(newTextareaValue, todos);
+      updatePage(page.id, { content: updated });
+    } else {
+      updatePage(page.id, { content: newTextareaValue });
+    }
+  };
+
   // Textarea input and slash trigger detection
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     const cursor = e.target.selectionStart;
-    updatePage(page.id, { content: value });
+
+    handleUpdateEditorContent(value);
 
     // Look for slash before cursor
     const textBeforeCursor = value.slice(0, cursor);
@@ -318,11 +375,99 @@ export default function Home() {
       updatePage(page.id, {
         content: '✨ [AI Assistant]: Tôi có thể giúp gì cho trang này của bạn? (Gõ yêu cầu và nhấn Enter)... \n\n',
       });
+      return;
+    }
+
+    // Xử lý Enter và Shift + Enter cho các khối block
+    if (e.key === 'Enter') {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+
+      const value = textarea.value;
+      const cursor = textarea.selectionStart;
+
+      // Trích xuất dòng hiện tại nơi con trỏ đang đứng
+      const textBeforeCursor = value.slice(0, cursor);
+      const textAfterCursor = value.slice(cursor);
+      const lineStartIndex = textBeforeCursor.lastIndexOf('\n') + 1;
+      const lineEndRelative = textAfterCursor.indexOf('\n');
+      const lineEndIndex = lineEndRelative === -1 ? value.length : cursor + lineEndRelative;
+      const currentLine = value.slice(lineStartIndex, lineEndIndex);
+
+      // Nhận diện kiểu block của dòng hiện tại:
+      const todoMatch = currentLine.match(/^(\s*-\s*\[([ xX])\]\s*)/);
+      const bulletMatch = currentLine.match(/^(\s*[-*•]\s+)/);
+      const numberMatch = currentLine.match(/^(\s*(\d+)\.\s+)/);
+      const quoteMatch = currentLine.match(/^(\s*>\s*(💡\s*)?)/);
+      const headingMatch = currentLine.match(/^(\s*#{1,6}\s+)/);
+
+      // TRƯỜNG HỢP 1: SHIFT + ENTER -> Vẫn tiếp tục sử dụng khối block đó
+      if (e.shiftKey) {
+        e.preventDefault();
+
+        let nextPrefix = '';
+        if (numberMatch) {
+          const currentNum = parseInt(numberMatch[2], 10);
+          nextPrefix = `${currentNum + 1}. `;
+        } else if (todoMatch) {
+          nextPrefix = '- [ ] ';
+        } else if (bulletMatch) {
+          nextPrefix = '- ';
+        } else if (quoteMatch) {
+          nextPrefix = quoteMatch[0];
+        } else if (headingMatch) {
+          nextPrefix = headingMatch[0];
+        }
+
+        const inserted = '\n' + nextPrefix;
+        const newText = textBeforeCursor + inserted + textAfterCursor;
+        handleUpdateEditorContent(newText);
+
+        setTimeout(() => {
+          if (textareaRef.current) {
+            const newPos = cursor + inserted.length;
+            textareaRef.current.focus();
+            textareaRef.current.setSelectionRange(newPos, newPos);
+          }
+        }, 0);
+        return;
+      }
+
+      // TRƯỜNG HỢP 2: ENTER THƯỜNG -> Danh sách cũ vẫn ở đó và chuyển ngay sang một dòng văn bản bình thường!
+      if (!e.shiftKey) {
+        e.preventDefault();
+
+        // Danh sách cũ giữ nguyên 100%, chèn một dòng mới là văn bản thường (không mang tiền tố)
+        const inserted = '\n';
+        const newText = textBeforeCursor + inserted + textAfterCursor;
+        handleUpdateEditorContent(newText);
+
+        setTimeout(() => {
+          if (textareaRef.current) {
+            const newPos = cursor + inserted.length;
+            textareaRef.current.focus();
+            textareaRef.current.setSelectionRange(newPos, newPos);
+          }
+        }, 0);
+        return;
+      }
     }
   };
 
   return (
-    <Box key={page.id} style={{ width: '100%', position: 'relative' }}>
+    <Box
+      key={page.id}
+      onClick={handleFocusEditor}
+      style={{
+        width: '100%',
+        flexGrow: 1,
+        minHeight: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'relative',
+        cursor: isDatabase ? 'default' : 'text',
+      }}
+    >
       {/* Cover Image */}
       {hasCover && (
         <Box
@@ -332,6 +477,7 @@ export default function Home() {
             marginBottom: '24px',
             background: page.cover,
             position: 'relative',
+            cursor: 'default',
           }}
         >
           <Button
@@ -354,7 +500,7 @@ export default function Home() {
       )}
 
       {/* Top action triggers: Add Icon / Add Cover */}
-      <Flex gap="2" mb="2" align="center" style={{ opacity: 0.85 }}>
+      <Flex gap="2" mb="2" align="center" style={{ opacity: 0.85, cursor: 'default' }}>
         <Popover.Root>
           <Popover.Trigger>
             <Button size="1" variant="ghost" color="gray" style={{ cursor: 'pointer', padding: '4px 6px' }}>
@@ -454,7 +600,7 @@ export default function Home() {
 
       {/* Notion-style Quick Template Starters if page is completely empty */}
       {isEmpty && (
-        <Box mb="6">
+        <Box mb="6" style={{ cursor: 'default' }}>
           <Text size="2" color="gray" mb="3" as="p">
             Chọn mẫu để bắt đầu hoặc gõ văn bản ngay bên dưới:
           </Text>
@@ -514,7 +660,7 @@ export default function Home() {
 
       {/* Content View: Database View */}
       {isDatabase ? (
-        <Box>
+        <Box style={{ cursor: 'default' }}>
           <Flex justify="between" align="center" mb="3">
             <Flex gap="2" align="center">
               <Layers size={16} color="var(--gray-9)" />
@@ -595,10 +741,10 @@ export default function Home() {
         </Box>
       ) : (
         /* Content View: Rich Text / Markdown Editor with Interactive Todo List */
-        <Box>
+        <Box style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
           {/* Mode Switcher if page contains To-do items */}
           {hasTodos && (
-            <Flex justify="between" align="center" mb="3">
+            <Flex justify="between" align="center" mb="3" style={{ cursor: 'default' }}>
               <Flex align="center" gap="2">
                 <ListTodo size={16} color="var(--blue-9)" />
                 <Text size="2" weight="medium" color="gray">
@@ -636,46 +782,59 @@ export default function Home() {
             />
           )}
 
-          {/* Textarea Editor (shows when in raw mode or for extra notes below) */}
-          {(!hasTodos || todoViewMode === 'raw') && (
-            <Box style={{ position: 'relative' }}>
-              {/* Floating Slash Command Menu */}
-              <SlashCommandMenu
-                isOpen={slashMenuOpen}
-                query={slashQuery}
-                position={slashPosition}
-                onClose={() => setSlashMenuOpen(false)}
-                onSelectCommand={(cmdId) => {
-                  const cmd = filteredCommands.find((c) => c.id === cmdId);
-                  if (cmd) cmd.execute();
-                }}
-                selectedIndex={selectedIndex}
-                onHoverIndex={setSelectedIndex}
-                commands={filteredCommands}
-              />
+          {/* Textarea Editor: Active in text mode, raw mode, or as continuous writing area below checklist */}
+          <Box style={{ position: 'relative', marginTop: hasTodos && todoViewMode === 'interactive' ? '8px' : '0px' }}>
+            {/* Floating Slash Command Menu */}
+            <SlashCommandMenu
+              isOpen={slashMenuOpen}
+              query={slashQuery}
+              position={slashPosition}
+              onClose={() => setSlashMenuOpen(false)}
+              onSelectCommand={(cmdId) => {
+                const cmd = filteredCommands.find((c) => c.id === cmdId);
+                if (cmd) cmd.execute();
+              }}
+              selectedIndex={selectedIndex}
+              onHoverIndex={setSelectedIndex}
+              commands={filteredCommands}
+            />
 
-              <textarea
-                ref={textareaRef}
-                value={page.content || ''}
-                onChange={handleTextareaChange}
-                onKeyDown={handleTextareaKeyDown}
-                placeholder="Press 'space' for AI or '/' for commands"
-                style={{
-                  width: '100%',
-                  minHeight: '340px',
-                  border: 'none',
-                  outline: 'none',
-                  resize: 'none',
-                  background: 'transparent',
-                  fontSize: '15px',
-                  lineHeight: 1.7,
-                  color: 'var(--gray-12)',
-                  fontFamily: 'inherit',
-                  padding: 0,
-                }}
-              />
-            </Box>
-          )}
+            <textarea
+              ref={textareaRef}
+              value={hasTodos && todoViewMode === 'interactive' ? nonTodoNotes : (page.content || '')}
+              onChange={handleTextareaChange}
+              onKeyDown={handleTextareaKeyDown}
+              placeholder={
+                hasTodos && todoViewMode === 'interactive'
+                  ? "Nhấp để viết thêm ghi chú bên dưới danh sách hoặc gõ '/'..."
+                  : "Press 'space' for AI or '/' for commands"
+              }
+              style={{
+                width: '100%',
+                minHeight: '180px',
+                border: 'none',
+                outline: 'none',
+                resize: 'none',
+                background: 'transparent',
+                fontSize: '15px',
+                lineHeight: 1.7,
+                color: 'var(--gray-12)',
+                fontFamily: 'inherit',
+                padding: 0,
+              }}
+            />
+          </Box>
+
+          {/* Stretchable empty area below content that focuses editor when clicked */}
+          <Box
+            style={{
+              flexGrow: 1,
+              minHeight: '260px',
+              cursor: 'text',
+              width: '100%',
+            }}
+            onClick={handleFocusEditor}
+          />
         </Box>
       )}
     </Box>

@@ -53,9 +53,21 @@ export default function MainLayout({
             flexGrow: 1,
             overflowY: "auto",
             backgroundColor: "var(--gray-2)",
+            display: "flex",
+            flexDirection: "column",
           }}
         >
-          <Box p="6" style={{ maxWidth: "800px", margin: "0 auto" }}>
+          <Box
+            p="6"
+            style={{
+              maxWidth: "800px",
+              margin: "0 auto",
+              width: "100%",
+              flexGrow: 1,
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
             {children}
           </Box>
         </Box>

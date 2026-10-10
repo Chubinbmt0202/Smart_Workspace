@@ -115,9 +115,9 @@ export default function TodoListBlock({ content, onChange }: TodoListBlockProps)
   };
 
   const handleKeyDown = (e: React.KeyboardEvent, index: number, id: string) => {
-    if (e.key === 'Enter') {
+    // SHIFT + ENTER: Vẫn sử dụng khối block to-do đó (tạo thêm 1 to-do item mới ngay sau)
+    if (e.key === 'Enter' && e.shiftKey) {
       e.preventDefault();
-      // Insert empty item right after current index
       const newItem: TodoItem = {
         id: `todo-${Date.now()}`,
         text: '',
@@ -128,11 +128,26 @@ export default function TodoListBlock({ content, onChange }: TodoListBlockProps)
       updated.splice(index + 1, 0, newItem);
       updateTodoList(updated);
       setTimeout(() => {
-        // focus next input
         const inputs = document.querySelectorAll<HTMLInputElement>('.notion-todo-input');
         if (inputs[index + 1]) inputs[index + 1].focus();
       }, 50);
-    } else if (e.key === 'Backspace' && todos[index]?.text === '') {
+      return;
+    }
+
+    // ENTER THƯỜNG: Đổi sang khối block khác (chuyển focus xuống vùng soạn thảo văn bản thường bên dưới)
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      const textarea = document.querySelector('textarea');
+      if (textarea) {
+        textarea.focus();
+        const len = textarea.value.length;
+        textarea.setSelectionRange(len, len);
+      }
+      return;
+    }
+
+    // BACKSPACE khi ô trống: xóa to-do item và lùi về ô trước
+    if (e.key === 'Backspace' && todos[index]?.text === '') {
       e.preventDefault();
       handleDelete(id);
       setTimeout(() => {
