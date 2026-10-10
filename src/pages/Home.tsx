@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import {
   Heading,
   Text,
@@ -22,7 +22,7 @@ import {
   Calendar,
   Layers,
 } from 'lucide-react';
-import { usePageStore } from '../store/pageStore';
+import { usePageStore, useActivePage } from '../store/pageStore';
 
 const EMOJI_LIST = [
   '📄', '📝', '💡', '🚀', '🤖', '📊', '🎨', '📁',
@@ -36,6 +36,7 @@ const COVERS = [
   'linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%)',
   'linear-gradient(to top, #0ba360 0%, #3cba92 100%)',
   'linear-gradient(to right, #434343 0%, black 100%)',
+  'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
 ];
 
 interface DatabaseRow {
@@ -46,23 +47,19 @@ interface DatabaseRow {
   date: string;
 }
 
+const DEFAULT_DB_ROWS: DatabaseRow[] = [
+  { id: '1', name: 'Nghiên cứu thị trường', status: 'Done', tag: 'Research', date: '2026-03-01' },
+  { id: '2', name: 'Thiết kế giao diện', status: 'In progress', tag: 'Design', date: '2026-03-05' },
+  { id: '3', name: 'Triển khai Frontend & State', status: 'In progress', tag: 'Dev', date: '2026-03-10' },
+  { id: '4', name: 'Kiểm thử & Tối ưu hiệu năng', status: 'Not started', tag: 'QA', date: '2026-03-15' },
+];
+
 export default function Home() {
-  const getActivePage = usePageStore((state) => state.getActivePage);
+  const activeData = useActivePage();
   const updatePage = usePageStore((state) => state.updatePage);
   const addPage = usePageStore((state) => state.addPage);
-  const activeData = getActivePage();
 
-  const [hasCover, setHasCover] = useState(false);
-  const [coverIndex, setCoverIndex] = useState(0);
   const titleInputRef = useRef<HTMLInputElement>(null);
-
-  // Database sample state for database type pages
-  const [dbRows, setDbRows] = useState<DatabaseRow[]>([
-    { id: '1', name: 'Nghiên cứu thị trường', status: 'Done', tag: 'Research', date: '2026-03-01' },
-    { id: '2', name: 'Thiết kế giao diện', status: 'In progress', tag: 'Design', date: '2026-03-05' },
-    { id: '3', name: 'Triển khai Frontend & State', status: 'In progress', tag: 'Dev', date: '2026-03-10' },
-    { id: '4', name: 'Kiểm thử & Tối ưu hiệu năng', status: 'Not started', tag: 'QA', date: '2026-03-15' },
-  ]);
 
   // Focus title automatically if page is freshly created with empty title
   useEffect(() => {
@@ -71,10 +68,27 @@ export default function Home() {
     }
   }, [activeData?.page?.id]);
 
+  // Database rows for database pages: parsed from content if valid JSON, otherwise fallback
+  const dbRows: DatabaseRow[] = useMemo(() => {
+    if (!activeData?.page || activeData.page.type !== 'database') return [];
+    try {
+      const parsed = JSON.parse(activeData.page.content || '');
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch {
+      // not JSON
+    }
+    return DEFAULT_DB_ROWS;
+  }, [activeData?.page?.id, activeData?.page?.content, activeData?.page?.type]);
+
+  const setDbRows = (rows: DatabaseRow[]) => {
+    if (!activeData?.page) return;
+    updatePage(activeData.page.id, { content: JSON.stringify(rows) });
+  };
+
   if (!activeData) {
     return (
       <Flex direction="column" align="center" justify="center" gap="4" py="9" style={{ minHeight: '50vh' }}>
-        <Text size="3" color="gray">Chưa chọn trang nào hoặc không có trang.</Text>
+        <Text size="3" color="gray">Chưa chọn trang nào hoặc danh sách đang trống.</Text>
         <Button onClick={() => addPage()} variant="solid" color="gray" style={{ cursor: 'pointer' }}>
           <Plus size={16} /> Tạo trang mới ngay
         </Button>
@@ -85,6 +99,7 @@ export default function Home() {
   const { page } = activeData;
   const isDatabase = page.type === 'database';
   const isEmpty = !page.content && !isDatabase;
+  const hasCover = Boolean(page.cover);
 
   const handleTitleChange = (newTitle: string) => {
     updatePage(page.id, { title: newTitle });
@@ -92,6 +107,20 @@ export default function Home() {
 
   const handleIconSelect = (icon: string) => {
     updatePage(page.id, { icon });
+  };
+
+  const handleToggleCover = () => {
+    if (hasCover) {
+      updatePage(page.id, { cover: undefined });
+    } else {
+      updatePage(page.id, { cover: COVERS[0] });
+    }
+  };
+
+  const handleChangeCover = () => {
+    const currentIndex = COVERS.indexOf(page.cover || '');
+    const nextCover = COVERS[(currentIndex + 1) % COVERS.length];
+    updatePage(page.id, { cover: nextCover });
   };
 
   const handleApplyTemplate = (type: 'empty' | 'icon' | 'database' | 'meeting' | 'todo') => {
@@ -108,7 +137,7 @@ export default function Home() {
         icon: '📊',
         type: 'database',
         title: page.title || 'Bảng dữ liệu công việc',
-        content: 'Database view',
+        content: JSON.stringify(DEFAULT_DB_ROWS),
       });
     } else if (type === 'meeting') {
       updatePage(page.id, {
@@ -135,7 +164,7 @@ export default function Home() {
         title: page.title || 'Kế hoạch công việc (Tasks Tracker)',
         content: `🔥 Ưu tiên cao:
 - [x] Tạo cơ chế tạo trang Notion
-- [ ] Kết nối kho lưu trữ và trạng thái
+- [x] Kết nối kho lưu trữ và thanh điều hướng Breadcrumb
 - [ ] Viết tài liệu hướng dẫn
 
 📌 Việc cần làm tiếp theo:
@@ -157,7 +186,7 @@ export default function Home() {
   };
 
   return (
-    <Box style={{ width: '100%', position: 'relative' }}>
+    <Box key={page.id} style={{ width: '100%', position: 'relative' }}>
       {/* Cover Image */}
       {hasCover && (
         <Box
@@ -165,7 +194,7 @@ export default function Home() {
             height: '180px',
             borderRadius: '8px',
             marginBottom: '24px',
-            background: COVERS[coverIndex % COVERS.length],
+            background: page.cover,
             position: 'relative',
           }}
         >
@@ -173,7 +202,7 @@ export default function Home() {
             size="1"
             variant="surface"
             color="gray"
-            onClick={() => setCoverIndex((prev) => (prev + 1) % COVERS.length)}
+            onClick={handleChangeCover}
             style={{
               position: 'absolute',
               bottom: '12px',
@@ -219,7 +248,7 @@ export default function Home() {
           size="1"
           variant="ghost"
           color="gray"
-          onClick={() => setHasCover(!hasCover)}
+          onClick={handleToggleCover}
           style={{ cursor: 'pointer', padding: '4px 6px' }}
         >
           <ImageIcon size={14} />
