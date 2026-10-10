@@ -1,11 +1,15 @@
 import { Flex, IconButton, Tooltip } from "@radix-ui/themes";
 import { Inbox, PanelLeftClose, SquarePen } from "lucide-react";
 import SidebarContent from "./SidebarContent";
+import { usePageStore } from "../../store/pageStore";
+
 interface SidebarProps {
   toggleSidebar: () => void;
 }
 
 export default function Sidebar({ toggleSidebar }: SidebarProps) {
+  const addPage = usePageStore((state) => state.addPage);
+
   return (
     <>
       <Flex
@@ -30,10 +34,9 @@ export default function Sidebar({ toggleSidebar }: SidebarProps) {
         </Tooltip>
 
         <Flex gap="2" align="center">
-          {/* Nút Inbox (Hộp thư) có nền xám mờ như trong ảnh [cite: 4] */}
           <Tooltip content="Hộp thư">
             <IconButton
-              variant="ghost" // "soft" trong Radix tạo nền xám nhạt tự nhiên như hình [cite: 4]
+              variant="ghost"
               color="gray"
               style={{ cursor: "pointer" }}
             >
@@ -41,11 +44,12 @@ export default function Sidebar({ toggleSidebar }: SidebarProps) {
             </IconButton>
           </Tooltip>
 
-          {/* Nút Viết mới (Edit) [cite: 4] */}
-          <Tooltip content="Tạo trang mới">
+          {/* Nút Viết mới (New Page like Notion) */}
+          <Tooltip content="Tạo trang mới (New Page)">
             <IconButton
-              variant="ghost" // "ghost" không nền, chỉ hiện nền khi hover [cite: 4]
+              variant="ghost"
               color="gray"
+              onClick={() => addPage()}
               style={{ cursor: "pointer" }}
             >
               <SquarePen size={18} strokeWidth={1.5} />

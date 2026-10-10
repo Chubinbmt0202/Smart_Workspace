@@ -1,14 +1,21 @@
 import { Flex, Text, Button, IconButton } from '@radix-ui/themes';
 import { 
-  Bookmark,   // Dùng làm icon màu tím bên trái
-  Lock,       // Icon ổ khóa
-  ChevronDown, // Icon mũi tên chỉ xuống
-  Link2,      // Icon copy link
-  Star,       // Icon yêu thích
-  MoreHorizontal // Icon ba chấm (Options)
+  Lock,
+  ChevronDown,
+  Link2,
+  Star,
+  MoreHorizontal
 } from 'lucide-react';
+import { usePageStore } from '../store/pageStore';
 
 export default function Topbar() {
+  const getActivePage = usePageStore((state) => state.getActivePage);
+  const activeData = getActivePage();
+
+  const title = activeData?.page.title || 'Untitled';
+  const icon = activeData?.page.icon || '📄';
+  const groupTitle = activeData?.group.title || 'Private';
+
   return (
     <Flex 
       justify="between" 
@@ -28,63 +35,78 @@ export default function Topbar() {
           gap="2" 
           py="1" 
           px="2"
-          style={{ cursor: 'pointer', borderRadius: '4px', transition: 'background 0.2s' }}
-          className="hover-bg-gray" // Thêm class này vào css để làm nền hover xám nhạt
+          style={{ 
+            cursor: 'pointer', 
+            borderRadius: '4px', 
+            transition: 'background 0.2s',
+            maxWidth: '300px',
+            overflow: 'hidden',
+          }}
         >
-          <Bookmark size={16} fill="var(--purple-9)" color="var(--purple-9)" />
-          <Text size="2" weight="regular" style={{ color: 'var(--gray-12)' }}>
-            Campaign Apply
+          <Text size="2">{icon}</Text>
+          <Text 
+            size="2" 
+            weight="medium" 
+            style={{ 
+              color: 'var(--gray-12)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              fontStyle: activeData?.page.title ? 'normal' : 'italic',
+              opacity: activeData?.page.title ? 1 : 0.65,
+            }}
+          >
+            {title}
           </Text>
         </Flex>
 
-        {/* Trạng thái Private */}
+        {/* Trạng thái Nhóm (Private / Workspace) */}
         <Flex 
           align="center" 
           gap="1" 
           py="1" 
           px="2"
           style={{ cursor: 'pointer', borderRadius: '4px', transition: 'background 0.2s' }}
-          className="hover-bg-gray"
         >
-          <Lock size={14} color="var(--gray-9)" />
-          <Text size="2" style={{ color: 'var(--gray-9)' }}>Private</Text>
-          <ChevronDown size={14} color="var(--gray-9)" />
+          <Lock size={13} color="var(--gray-9)" />
+          <Text size="2" style={{ color: 'var(--gray-9)' }}>{groupTitle}</Text>
+          <ChevronDown size={13} color="var(--gray-9)" />
         </Flex>
 
       </Flex>
 
 
-      {/* ===== BÊN PHẢI: Trạng thái lưu & Các hành động =====[cite: 6] */}
+      {/* ===== BÊN PHẢI: Trạng thái lưu & Các hành động ===== */}
       <Flex align="center" gap="2">
         
-        {/* Dòng chữ trạng thái lưu[cite: 6] */}
-        <Text size="2" style={{ color: 'var(--gray-9)' }} mr="2">
-          Edited 1d ago
+        {/* Dòng chữ trạng thái lưu */}
+        <Text size="1" style={{ color: 'var(--gray-9)' }} mr="2">
+          Đã lưu
         </Text>
 
-        {/* Nút Share[cite: 6] */}
+        {/* Nút Share */}
         <Button 
           variant="ghost" 
           color="gray" 
           size="1" 
           style={{ cursor: 'pointer', height: '28px', color: 'var(--gray-11)' }}
         >
-          <Lock size={14} />
+          <Lock size={13} />
           Share
         </Button>
 
-        {/* Nhóm Icon Actions (Link, Star, More)[cite: 6] */}
+        {/* Nhóm Icon Actions (Link, Star, More) */}
         <Flex align="center" gap="1">
           <IconButton variant="ghost" color="gray" size="1" style={{ cursor: 'pointer' }}>
-            <Link2 size={16} />
+            <Link2 size={15} />
           </IconButton>
           
           <IconButton variant="ghost" color="gray" size="1" style={{ cursor: 'pointer' }}>
-            <Star size={16} />
+            <Star size={15} />
           </IconButton>
           
           <IconButton variant="ghost" color="gray" size="1" style={{ cursor: 'pointer' }}>
-            <MoreHorizontal size={16} />
+            <MoreHorizontal size={15} />
           </IconButton>
         </Flex>
 

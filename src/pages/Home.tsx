@@ -1,24 +1,456 @@
-import { Heading, Text, Box, Card } from '@radix-ui/themes';
+import { useState, useEffect, useRef } from 'react';
+import {
+  Heading,
+  Text,
+  Box,
+  Flex,
+  Button,
+  IconButton,
+  Popover,
+  Badge,
+  Table,
+} from '@radix-ui/themes';
+import {
+  FileText,
+  Table as TableIcon,
+  Smile,
+  Image as ImageIcon,
+  CheckSquare,
+  Sparkles,
+  Plus,
+  Trash2,
+  Calendar,
+  Layers,
+} from 'lucide-react';
+import { usePageStore } from '../store/pageStore';
+
+const EMOJI_LIST = [
+  '📄', '📝', '💡', '🚀', '🤖', '📊', '🎨', '📁',
+  '🎯', '⭐', '🔥', '💻', '🧠', '⚡', '📌', '🏆',
+  '📚', '📅', '💬', '✨', '🔍', '🛠️', '🌿', '🔮'
+];
+
+const COVERS = [
+  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  'linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%)',
+  'linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%)',
+  'linear-gradient(to top, #0ba360 0%, #3cba92 100%)',
+  'linear-gradient(to right, #434343 0%, black 100%)',
+];
+
+interface DatabaseRow {
+  id: string;
+  name: string;
+  status: 'Not started' | 'In progress' | 'Done';
+  tag: string;
+  date: string;
+}
 
 export default function Home() {
-  return (
-    <Box>
-      {/* Page title[cite: 2] */}
-      <Heading size="7" mb="4">Page title</Heading>
+  const getActivePage = usePageStore((state) => state.getActivePage);
+  const updatePage = usePageStore((state) => state.updatePage);
+  const addPage = usePageStore((state) => state.addPage);
+  const activeData = getActivePage();
 
-      {/* Paragraph blocks[cite: 2] */}
-      <Box mb="6">
-        <Text as="p" mb="2">Paragraph block 1: Đây là đoạn văn bản mô tả cho trang.</Text>
-        <Text as="p">Paragraph block 2: Nội dung chi tiết hơn về dữ liệu bên dưới.</Text>
+  const [hasCover, setHasCover] = useState(false);
+  const [coverIndex, setCoverIndex] = useState(0);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  // Database sample state for database type pages
+  const [dbRows, setDbRows] = useState<DatabaseRow[]>([
+    { id: '1', name: 'Nghiên cứu thị trường', status: 'Done', tag: 'Research', date: '2026-03-01' },
+    { id: '2', name: 'Thiết kế giao diện', status: 'In progress', tag: 'Design', date: '2026-03-05' },
+    { id: '3', name: 'Triển khai Frontend & State', status: 'In progress', tag: 'Dev', date: '2026-03-10' },
+    { id: '4', name: 'Kiểm thử & Tối ưu hiệu năng', status: 'Not started', tag: 'QA', date: '2026-03-15' },
+  ]);
+
+  // Focus title automatically if page is freshly created with empty title
+  useEffect(() => {
+    if (activeData?.page && !activeData.page.title) {
+      titleInputRef.current?.focus();
+    }
+  }, [activeData?.page?.id]);
+
+  if (!activeData) {
+    return (
+      <Flex direction="column" align="center" justify="center" gap="4" py="9" style={{ minHeight: '50vh' }}>
+        <Text size="3" color="gray">Chưa chọn trang nào hoặc không có trang.</Text>
+        <Button onClick={() => addPage()} variant="solid" color="gray" style={{ cursor: 'pointer' }}>
+          <Plus size={16} /> Tạo trang mới ngay
+        </Button>
+      </Flex>
+    );
+  }
+
+  const { page } = activeData;
+  const isDatabase = page.type === 'database';
+  const isEmpty = !page.content && !isDatabase;
+
+  const handleTitleChange = (newTitle: string) => {
+    updatePage(page.id, { title: newTitle });
+  };
+
+  const handleIconSelect = (icon: string) => {
+    updatePage(page.id, { icon });
+  };
+
+  const handleApplyTemplate = (type: 'empty' | 'icon' | 'database' | 'meeting' | 'todo') => {
+    if (type === 'empty') {
+      updatePage(page.id, { content: 'Bắt đầu viết nội dung của bạn tại đây...' });
+    } else if (type === 'icon') {
+      const randomIcon = EMOJI_LIST[Math.floor(Math.random() * EMOJI_LIST.length)];
+      updatePage(page.id, {
+        icon: randomIcon,
+        content: 'Chào mừng bạn đến với trang mới! Hãy ghi lại những ý tưởng sáng tạo tại đây.',
+      });
+    } else if (type === 'database') {
+      updatePage(page.id, {
+        icon: '📊',
+        type: 'database',
+        title: page.title || 'Bảng dữ liệu công việc',
+        content: 'Database view',
+      });
+    } else if (type === 'meeting') {
+      updatePage(page.id, {
+        icon: '📝',
+        title: page.title || 'Biên bản cuộc họp (Meeting Notes)',
+        content: `📅 Ngày: ${new Date().toLocaleDateString('vi-VN')}
+👥 Thành viên tham gia: Team Core, Product Manager
+
+🎯 Mục tiêu cuộc họp:
+- Rà soát tiến độ dự án tuần hiện tại
+- Giải quyết các điểm nghẽn kỹ thuật
+
+📝 Nội dung trao đổi:
+1. Thống nhất cơ chế tạo trang mới chuẩn phong cách Notion
+2. Tối ưu UX/UI với visual mượt mà
+
+✅ Kế hoạch hành động:
+- [ ] Hoàn thiện luồng tạo trang
+- [ ] Kiểm thử tương tác trên trình duyệt`,
+      });
+    } else if (type === 'todo') {
+      updatePage(page.id, {
+        icon: '📋',
+        title: page.title || 'Kế hoạch công việc (Tasks Tracker)',
+        content: `🔥 Ưu tiên cao:
+- [x] Tạo cơ chế tạo trang Notion
+- [ ] Kết nối kho lưu trữ và trạng thái
+- [ ] Viết tài liệu hướng dẫn
+
+📌 Việc cần làm tiếp theo:
+- [ ] Đánh giá trải nghiệm người dùng
+- [ ] Thêm phím tắt nhanh`,
+      });
+    }
+  };
+
+  const addDbRow = () => {
+    const newRow: DatabaseRow = {
+      id: `${Date.now()}`,
+      name: 'Nhiệm vụ mới',
+      status: 'Not started',
+      tag: 'General',
+      date: new Date().toISOString().split('T')[0],
+    };
+    setDbRows([...dbRows, newRow]);
+  };
+
+  return (
+    <Box style={{ width: '100%', position: 'relative' }}>
+      {/* Cover Image */}
+      {hasCover && (
+        <Box
+          style={{
+            height: '180px',
+            borderRadius: '8px',
+            marginBottom: '24px',
+            background: COVERS[coverIndex % COVERS.length],
+            position: 'relative',
+          }}
+        >
+          <Button
+            size="1"
+            variant="surface"
+            color="gray"
+            onClick={() => setCoverIndex((prev) => (prev + 1) % COVERS.length)}
+            style={{
+              position: 'absolute',
+              bottom: '12px',
+              right: '12px',
+              cursor: 'pointer',
+              backgroundColor: 'rgba(255, 255, 255, 0.85)',
+              backdropFilter: 'blur(4px)',
+            }}
+          >
+            Đổi màu bìa
+          </Button>
+        </Box>
+      )}
+
+      {/* Top action triggers: Add Icon / Add Cover */}
+      <Flex gap="2" mb="2" align="center" style={{ opacity: 0.85 }}>
+        <Popover.Root>
+          <Popover.Trigger>
+            <Button size="1" variant="ghost" color="gray" style={{ cursor: 'pointer', padding: '4px 6px' }}>
+              <Smile size={14} />
+              {page.icon ? 'Đổi biểu tượng' : 'Thêm biểu tượng'}
+            </Button>
+          </Popover.Trigger>
+          <Popover.Content size="1" style={{ width: '260px' }}>
+            <Text size="1" color="gray" mb="2" weight="medium">Chọn biểu tượng Notion</Text>
+            <Flex wrap="wrap" gap="2">
+              {EMOJI_LIST.map((emoji) => (
+                <IconButton
+                  key={emoji}
+                  variant="ghost"
+                  size="2"
+                  onClick={() => handleIconSelect(emoji)}
+                  style={{ cursor: 'pointer', fontSize: '18px' }}
+                >
+                  {emoji}
+                </IconButton>
+              ))}
+            </Flex>
+          </Popover.Content>
+        </Popover.Root>
+
+        <Button
+          size="1"
+          variant="ghost"
+          color="gray"
+          onClick={() => setHasCover(!hasCover)}
+          style={{ cursor: 'pointer', padding: '4px 6px' }}
+        >
+          <ImageIcon size={14} />
+          {hasCover ? 'Xóa ảnh bìa' : 'Thêm ảnh bìa'}
+        </Button>
+      </Flex>
+
+      {/* Page Icon Banner */}
+      {page.icon && (
+        <Popover.Root>
+          <Popover.Trigger>
+            <Box
+              style={{
+                fontSize: '44px',
+                cursor: 'pointer',
+                display: 'inline-block',
+                lineHeight: 1,
+                marginBottom: '12px',
+                userSelect: 'none',
+              }}
+              title="Click để đổi icon"
+            >
+              {page.icon}
+            </Box>
+          </Popover.Trigger>
+          <Popover.Content size="1" style={{ width: '260px' }}>
+            <Text size="1" color="gray" mb="2" weight="medium">Chọn biểu tượng Notion</Text>
+            <Flex wrap="wrap" gap="2">
+              {EMOJI_LIST.map((emoji) => (
+                <IconButton
+                  key={emoji}
+                  variant="ghost"
+                  size="2"
+                  onClick={() => handleIconSelect(emoji)}
+                  style={{ cursor: 'pointer', fontSize: '18px' }}
+                >
+                  {emoji}
+                </IconButton>
+              ))}
+            </Flex>
+          </Popover.Content>
+        </Popover.Root>
+      )}
+
+      {/* Notion Page Title: Large, borderless, live editing */}
+      <Box mb="5">
+        <input
+          ref={titleInputRef}
+          type="text"
+          value={page.title}
+          onChange={(e) => handleTitleChange(e.target.value)}
+          placeholder="Untitled"
+          style={{
+            width: '100%',
+            fontSize: '34px',
+            fontWeight: 700,
+            color: 'var(--gray-12)',
+            border: 'none',
+            outline: 'none',
+            background: 'transparent',
+            padding: 0,
+            margin: 0,
+            fontFamily: 'inherit',
+          }}
+        />
       </Box>
 
-      {/* Database / Table[cite: 2] */}
-      <Card size="2">
-        <Text weight="bold" mb="2">Database / Table</Text>
-        <Box style={{ height: '200px', backgroundColor: 'var(--gray-3)', borderRadius: '4px' }}>
-          {/* Thay thế bằng component Table thực tế của bạn tại đây */}
+      {/* Notion-style Quick Template Starters if page is completely empty */}
+      {isEmpty && (
+        <Box mb="6">
+          <Text size="2" color="gray" mb="3" as="p">
+            Chọn mẫu để bắt đầu hoặc gõ văn bản ngay bên dưới:
+          </Text>
+          <Flex wrap="wrap" gap="2">
+            <Button
+              variant="surface"
+              color="gray"
+              size="2"
+              onClick={() => handleApplyTemplate('empty')}
+              style={{ cursor: 'pointer' }}
+            >
+              <FileText size={15} /> Trang trống (Empty page)
+            </Button>
+
+            <Button
+              variant="surface"
+              color="gray"
+              size="2"
+              onClick={() => handleApplyTemplate('icon')}
+              style={{ cursor: 'pointer' }}
+            >
+              <Sparkles size={15} /> Trang có icon ngẫu nhiên
+            </Button>
+
+            <Button
+              variant="surface"
+              color="gray"
+              size="2"
+              onClick={() => handleApplyTemplate('database')}
+              style={{ cursor: 'pointer' }}
+            >
+              <TableIcon size={15} /> Bảng cơ sở dữ liệu (Table)
+            </Button>
+
+            <Button
+              variant="surface"
+              color="gray"
+              size="2"
+              onClick={() => handleApplyTemplate('meeting')}
+              style={{ cursor: 'pointer' }}
+            >
+              <Calendar size={15} /> Mẫu Họp (Meeting Notes)
+            </Button>
+
+            <Button
+              variant="surface"
+              color="gray"
+              size="2"
+              onClick={() => handleApplyTemplate('todo')}
+              style={{ cursor: 'pointer' }}
+            >
+              <CheckSquare size={15} /> Danh sách công việc (To-do)
+            </Button>
+          </Flex>
         </Box>
-      </Card>
+      )}
+
+      {/* Content View: Database View */}
+      {isDatabase ? (
+        <Box>
+          <Flex justify="between" align="center" mb="3">
+            <Flex gap="2" align="center">
+              <Layers size={16} color="var(--gray-9)" />
+              <Heading size="3">Bảng dữ liệu (Table Database)</Heading>
+            </Flex>
+            <Button size="1" variant="soft" color="gray" onClick={addDbRow} style={{ cursor: 'pointer' }}>
+              <Plus size={14} /> Thêm hàng mới
+            </Button>
+          </Flex>
+
+          <Box style={{ border: '1px solid var(--gray-5)', borderRadius: '6px', overflow: 'hidden' }}>
+            <Table.Root variant="surface">
+              <Table.Header>
+                <Table.Row>
+                  <Table.ColumnHeaderCell>Tên công việc</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell>Trạng thái</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell>Nhãn (Tag)</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell>Ngày</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell></Table.ColumnHeaderCell>
+                </Table.Row>
+              </Table.Header>
+              <Table.Body>
+                {dbRows.map((row) => (
+                  <Table.Row key={row.id}>
+                    <Table.RowHeaderCell>
+                      <input
+                        type="text"
+                        value={row.name}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setDbRows(dbRows.map((r) => (r.id === row.id ? { ...r, name: val } : r)));
+                        }}
+                        style={{
+                          border: 'none',
+                          background: 'transparent',
+                          width: '100%',
+                          outline: 'none',
+                          color: 'var(--gray-12)',
+                        }}
+                      />
+                    </Table.RowHeaderCell>
+                    <Table.Cell>
+                      <Badge
+                        color={
+                          row.status === 'Done' ? 'green' : row.status === 'In progress' ? 'blue' : 'gray'
+                        }
+                        variant="soft"
+                      >
+                        {row.status}
+                      </Badge>
+                    </Table.Cell>
+                    <Table.Cell>
+                      <Badge color="purple" variant="outline">
+                        {row.tag}
+                      </Badge>
+                    </Table.Cell>
+                    <Table.Cell>
+                      <Text size="1" color="gray">
+                        {row.date}
+                      </Text>
+                    </Table.Cell>
+                    <Table.Cell>
+                      <IconButton
+                        size="1"
+                        variant="ghost"
+                        color="red"
+                        onClick={() => setDbRows(dbRows.filter((r) => r.id !== row.id))}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <Trash2 size={13} />
+                      </IconButton>
+                    </Table.Cell>
+                  </Table.Row>
+                ))}
+              </Table.Body>
+            </Table.Root>
+          </Box>
+        </Box>
+      ) : (
+        /* Content View: Rich Text / Markdown Editor */
+        <Box>
+          <textarea
+            value={page.content || ''}
+            onChange={(e) => updatePage(page.id, { content: e.target.value })}
+            placeholder="Gõ nội dung hoặc dùng '/' để nhập lệnh như Notion..."
+            style={{
+              width: '100%',
+              minHeight: '380px',
+              border: 'none',
+              outline: 'none',
+              resize: 'none',
+              background: 'transparent',
+              fontSize: '15px',
+              lineHeight: 1.7,
+              color: 'var(--gray-12)',
+              fontFamily: 'inherit',
+              padding: 0,
+            }}
+          />
+        </Box>
+      )}
     </Box>
   );
 }
