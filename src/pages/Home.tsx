@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef, useMemo, useState } from 'react';
 import {
   Heading,
   Text,
@@ -23,6 +23,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { usePageStore, useActivePage } from '../store/pageStore';
+import SlashCommandMenu, { getDefaultCommands } from '../components/Editor/SlashCommandMenu';
 
 const EMOJI_LIST = [
   '📄', '📝', '💡', '🚀', '🤖', '📊', '🎨', '📁',
@@ -60,6 +61,14 @@ export default function Home() {
   const addPage = usePageStore((state) => state.addPage);
 
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Slash Command State
+  const [slashMenuOpen, setSlashMenuOpen] = useState(false);
+  const [slashQuery, setSlashQuery] = useState('');
+  const [slashStartIndex, setSlashStartIndex] = useState(-1);
+  const [slashPosition, setSlashPosition] = useState({ top: 40, left: 0 });
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   // Focus title automatically if page is freshly created with empty title
   useEffect(() => {
@@ -84,6 +93,49 @@ export default function Home() {
     if (!activeData?.page) return;
     updatePage(activeData.page.id, { content: JSON.stringify(rows) });
   };
+
+  // Commands definition
+  const allCommands = useMemo(() => {
+    return getDefaultCommands(
+      (textToInsert) => {
+        if (!activeData?.page || !textareaRef.current) return;
+        const textarea = textareaRef.current;
+        const currentContent = activeData.page.content || '';
+        const start = slashStartIndex >= 0 ? slashStartIndex : textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const newContent = currentContent.slice(0, start) + textToInsert + currentContent.slice(end);
+        updatePage(activeData.page.id, { content: newContent });
+        setSlashMenuOpen(false);
+
+        setTimeout(() => {
+          textarea.focus();
+          const newCursor = start + textToInsert.length;
+          textarea.setSelectionRange(newCursor, newCursor);
+        }, 0);
+      },
+      () => {
+        if (!activeData?.page) return;
+        updatePage(activeData.page.id, {
+          type: 'database',
+          icon: '📊',
+          content: JSON.stringify(DEFAULT_DB_ROWS),
+        });
+        setSlashMenuOpen(false);
+      }
+    );
+  }, [activeData?.page?.id, slashStartIndex]);
+
+  // Filter commands by search query
+  const filteredCommands = useMemo(() => {
+    if (!slashQuery.trim()) return allCommands;
+    const q = slashQuery.toLowerCase();
+    return allCommands.filter(
+      (cmd) =>
+        cmd.title.toLowerCase().includes(q) ||
+        cmd.description.toLowerCase().includes(q) ||
+        cmd.keywords.some((k) => k.toLowerCase().includes(q))
+    );
+  }, [allCommands, slashQuery]);
 
   if (!activeData) {
     return (
@@ -125,13 +177,15 @@ export default function Home() {
 
   const handleApplyTemplate = (type: 'empty' | 'icon' | 'database' | 'meeting' | 'todo') => {
     if (type === 'empty') {
-      updatePage(page.id, { content: 'Bắt đầu viết nội dung của bạn tại đây...' });
+      updatePage(page.id, { content: '' });
+      setTimeout(() => textareaRef.current?.focus(), 0);
     } else if (type === 'icon') {
       const randomIcon = EMOJI_LIST[Math.floor(Math.random() * EMOJI_LIST.length)];
       updatePage(page.id, {
         icon: randomIcon,
-        content: 'Chào mừng bạn đến với trang mới! Hãy ghi lại những ý tưởng sáng tạo tại đây.',
+        content: '',
       });
+      setTimeout(() => textareaRef.current?.focus(), 0);
     } else if (type === 'database') {
       updatePage(page.id, {
         icon: '📊',
@@ -183,6 +237,79 @@ export default function Home() {
       date: new Date().toISOString().split('T')[0],
     };
     setDbRows([...dbRows, newRow]);
+  };
+
+  // Textarea input and slash trigger detection
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    const cursor = e.target.selectionStart;
+    updatePage(page.id, { content: value });
+
+    // Look for slash before cursor
+    const textBeforeCursor = value.slice(0, cursor);
+    const lastSlashIndex = textBeforeCursor.lastIndexOf('/');
+
+    if (lastSlashIndex !== -1) {
+      const charBeforeSlash = lastSlashIndex > 0 ? textBeforeCursor[lastSlashIndex - 1] : '\n';
+      const textAfterSlash = textBeforeCursor.slice(lastSlashIndex + 1);
+
+      // Slash is valid if at line start or preceded by space, and no newline between / and cursor
+      if (
+        (charBeforeSlash === '\n' || charBeforeSlash === ' ') &&
+        !textAfterSlash.includes('\n') &&
+        textAfterSlash.length <= 15
+      ) {
+        setSlashMenuOpen(true);
+        setSlashQuery(textAfterSlash);
+        setSlashStartIndex(lastSlashIndex);
+        setSelectedIndex(0);
+
+        // Approximate vertical position based on line number
+        const linesBefore = textBeforeCursor.split('\n').length;
+        const top = Math.min(linesBefore * 27 + 8, 450);
+        setSlashPosition({ top, left: 8 });
+        return;
+      }
+    }
+
+    setSlashMenuOpen(false);
+  };
+
+  const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Navigate slash menu if open
+    if (slashMenuOpen && filteredCommands.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev + 1) % filteredCommands.length);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev - 1 + filteredCommands.length) % filteredCommands.length);
+        return;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        const selected = filteredCommands[selectedIndex];
+        if (selected) {
+          selected.execute();
+        }
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setSlashMenuOpen(false);
+        return;
+      }
+    }
+
+    // Press 'space' for AI on empty page
+    if (e.key === ' ' && (!page.content || page.content.trim() === '')) {
+      e.preventDefault();
+      updatePage(page.id, {
+        content: '✨ [AI Assistant]: Tôi có thể giúp gì cho trang này của bạn? (Gõ yêu cầu và nhấn Enter)... \n\n',
+      });
+    }
   };
 
   return (
@@ -458,12 +585,29 @@ export default function Home() {
           </Box>
         </Box>
       ) : (
-        /* Content View: Rich Text / Markdown Editor */
-        <Box>
+        /* Content View: Rich Text / Markdown Editor with Slash Command System */
+        <Box style={{ position: 'relative' }}>
+          {/* Floating Slash Command Menu */}
+          <SlashCommandMenu
+            isOpen={slashMenuOpen}
+            query={slashQuery}
+            position={slashPosition}
+            onClose={() => setSlashMenuOpen(false)}
+            onSelectCommand={(cmdId) => {
+              const cmd = filteredCommands.find((c) => c.id === cmdId);
+              if (cmd) cmd.execute();
+            }}
+            selectedIndex={selectedIndex}
+            onHoverIndex={setSelectedIndex}
+            commands={filteredCommands}
+          />
+
           <textarea
+            ref={textareaRef}
             value={page.content || ''}
-            onChange={(e) => updatePage(page.id, { content: e.target.value })}
-            placeholder="Gõ nội dung hoặc dùng '/' để nhập lệnh như Notion..."
+            onChange={handleTextareaChange}
+            onKeyDown={handleTextareaKeyDown}
+            placeholder="Press 'space' for AI or '/' for commands"
             style={{
               width: '100%',
               minHeight: '380px',
