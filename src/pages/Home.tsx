@@ -21,9 +21,11 @@ import {
   Trash2,
   Calendar,
   Layers,
+  ListTodo,
 } from 'lucide-react';
 import { usePageStore, useActivePage } from '../store/pageStore';
 import SlashCommandMenu, { getDefaultCommands } from '../components/Editor/SlashCommandMenu';
+import TodoListBlock from '../components/Editor/TodoListBlock';
 
 const EMOJI_LIST = [
   '📄', '📝', '💡', '🚀', '🤖', '📊', '🎨', '📁',
@@ -70,12 +72,21 @@ export default function Home() {
   const [slashPosition, setSlashPosition] = useState({ top: 40, left: 0 });
   const [selectedIndex, setSelectedIndex] = useState(0);
 
+  // View mode: 'interactive' (Notion checklist block) or 'raw' (text)
+  const [todoViewMode, setTodoViewMode] = useState<'interactive' | 'raw'>('interactive');
+
   // Focus title automatically if page is freshly created with empty title
   useEffect(() => {
     if (activeData?.page && !activeData.page.title) {
       titleInputRef.current?.focus();
     }
   }, [activeData?.page?.id]);
+
+  // Check if page content contains todo markdown
+  const hasTodos = useMemo(() => {
+    const c = activeData?.page?.content || '';
+    return c.includes('- [ ]') || c.includes('- [x]') || c.includes('- [X]');
+  }, [activeData?.page?.content]);
 
   // Database rows for database pages: parsed from content if valid JSON, otherwise fallback
   const dbRows: DatabaseRow[] = useMemo(() => {
@@ -213,17 +224,15 @@ export default function Home() {
 - [ ] Kiểm thử tương tác trên trình duyệt`,
       });
     } else if (type === 'todo') {
+      setTodoViewMode('interactive');
       updatePage(page.id, {
         icon: '📋',
         title: page.title || 'Kế hoạch công việc (Tasks Tracker)',
-        content: `🔥 Ưu tiên cao:
-- [x] Tạo cơ chế tạo trang Notion
+        content: `- [x] Tạo cơ chế tạo trang Notion 🔥
 - [x] Kết nối kho lưu trữ và thanh điều hướng Breadcrumb
-- [ ] Viết tài liệu hướng dẫn
-
-📌 Việc cần làm tiếp theo:
-- [ ] Đánh giá trải nghiệm người dùng
-- [ ] Thêm phím tắt nhanh`,
+- [x] Thiết kế giao diện TodoList tương tác chuẩn Notion ⚡
+- [ ] Tích hợp phím tắt nhanh và kiểm thử tải
+- [ ] Hoàn thiện tài liệu hướng dẫn người dùng`,
       });
     }
   };
@@ -585,43 +594,88 @@ export default function Home() {
           </Box>
         </Box>
       ) : (
-        /* Content View: Rich Text / Markdown Editor with Slash Command System */
-        <Box style={{ position: 'relative' }}>
-          {/* Floating Slash Command Menu */}
-          <SlashCommandMenu
-            isOpen={slashMenuOpen}
-            query={slashQuery}
-            position={slashPosition}
-            onClose={() => setSlashMenuOpen(false)}
-            onSelectCommand={(cmdId) => {
-              const cmd = filteredCommands.find((c) => c.id === cmdId);
-              if (cmd) cmd.execute();
-            }}
-            selectedIndex={selectedIndex}
-            onHoverIndex={setSelectedIndex}
-            commands={filteredCommands}
-          />
+        /* Content View: Rich Text / Markdown Editor with Interactive Todo List */
+        <Box>
+          {/* Mode Switcher if page contains To-do items */}
+          {hasTodos && (
+            <Flex justify="between" align="center" mb="3">
+              <Flex align="center" gap="2">
+                <ListTodo size={16} color="var(--blue-9)" />
+                <Text size="2" weight="medium" color="gray">
+                  Chế độ hiển thị:
+                </Text>
+              </Flex>
+              <Flex gap="1">
+                <Button
+                  size="1"
+                  variant={todoViewMode === 'interactive' ? 'solid' : 'ghost'}
+                  color="blue"
+                  onClick={() => setTodoViewMode('interactive')}
+                  style={{ cursor: 'pointer', height: '24px' }}
+                >
+                  <CheckSquare size={13} /> Checklist tương tác
+                </Button>
+                <Button
+                  size="1"
+                  variant={todoViewMode === 'raw' ? 'solid' : 'ghost'}
+                  color="gray"
+                  onClick={() => setTodoViewMode('raw')}
+                  style={{ cursor: 'pointer', height: '24px' }}
+                >
+                  <FileText size={13} /> Văn bản thuần
+                </Button>
+              </Flex>
+            </Flex>
+          )}
 
-          <textarea
-            ref={textareaRef}
-            value={page.content || ''}
-            onChange={handleTextareaChange}
-            onKeyDown={handleTextareaKeyDown}
-            placeholder="Press 'space' for AI or '/' for commands"
-            style={{
-              width: '100%',
-              minHeight: '380px',
-              border: 'none',
-              outline: 'none',
-              resize: 'none',
-              background: 'transparent',
-              fontSize: '15px',
-              lineHeight: 1.7,
-              color: 'var(--gray-12)',
-              fontFamily: 'inherit',
-              padding: 0,
-            }}
-          />
+          {/* Interactive Notion Todo List Block */}
+          {hasTodos && todoViewMode === 'interactive' && (
+            <TodoListBlock
+              content={page.content || ''}
+              onChange={(newContent) => updatePage(page.id, { content: newContent })}
+            />
+          )}
+
+          {/* Textarea Editor (shows when in raw mode or for extra notes below) */}
+          {(!hasTodos || todoViewMode === 'raw') && (
+            <Box style={{ position: 'relative' }}>
+              {/* Floating Slash Command Menu */}
+              <SlashCommandMenu
+                isOpen={slashMenuOpen}
+                query={slashQuery}
+                position={slashPosition}
+                onClose={() => setSlashMenuOpen(false)}
+                onSelectCommand={(cmdId) => {
+                  const cmd = filteredCommands.find((c) => c.id === cmdId);
+                  if (cmd) cmd.execute();
+                }}
+                selectedIndex={selectedIndex}
+                onHoverIndex={setSelectedIndex}
+                commands={filteredCommands}
+              />
+
+              <textarea
+                ref={textareaRef}
+                value={page.content || ''}
+                onChange={handleTextareaChange}
+                onKeyDown={handleTextareaKeyDown}
+                placeholder="Press 'space' for AI or '/' for commands"
+                style={{
+                  width: '100%',
+                  minHeight: '340px',
+                  border: 'none',
+                  outline: 'none',
+                  resize: 'none',
+                  background: 'transparent',
+                  fontSize: '15px',
+                  lineHeight: 1.7,
+                  color: 'var(--gray-12)',
+                  fontFamily: 'inherit',
+                  padding: 0,
+                }}
+              />
+            </Box>
+          )}
         </Box>
       )}
     </Box>
