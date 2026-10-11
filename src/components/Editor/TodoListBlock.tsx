@@ -113,10 +113,9 @@ export default function TodoListBlock({ content, onChange }: TodoListBlockProps)
     updateTodoList([...todos, newItem]);
     setNewText('');
   };
-
   const handleKeyDown = (e: React.KeyboardEvent, index: number, id: string) => {
-    // SHIFT + ENTER: Vẫn sử dụng khối block to-do đó (tạo thêm 1 to-do item mới ngay sau)
-    if (e.key === 'Enter' && e.shiftKey) {
+    // ENTER hoặc SHIFT + ENTER: Tạo thêm 1 việc cần làm mới ngay bên dưới
+    if (e.key === 'Enter') {
       e.preventDefault();
       const newItem: TodoItem = {
         id: `todo-${Date.now()}`,
@@ -131,18 +130,6 @@ export default function TodoListBlock({ content, onChange }: TodoListBlockProps)
         const inputs = document.querySelectorAll<HTMLInputElement>('.notion-todo-input');
         if (inputs[index + 1]) inputs[index + 1].focus();
       }, 50);
-      return;
-    }
-
-    // ENTER THƯỜNG: Đổi sang khối block khác (chuyển focus xuống vùng soạn thảo văn bản thường bên dưới)
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      const textarea = document.querySelector('textarea');
-      if (textarea) {
-        textarea.focus();
-        const len = textarea.value.length;
-        textarea.setSelectionRange(len, len);
-      }
       return;
     }
 

@@ -6,6 +6,7 @@ import {
   Button,
   IconButton,
   Popover,
+  Badge,
 } from '@radix-ui/themes';
 import {
   FileText,
@@ -17,7 +18,7 @@ import {
 } from 'lucide-react';
 import { usePageStore, useActivePage } from '../store/pageStore';
 import SlashCommandMenu, { getDefaultCommands } from '../components/Editor/SlashCommandMenu';
-import TodoListBlock, { parseTodosFromContent, serializeTodosToContent } from '../components/Editor/TodoListBlock';
+import TodoListBlock from '../components/Editor/TodoListBlock';
 import ScheduleBlock, { DEFAULT_SCHEDULE } from '../components/Editor/ScheduleBlock';
 
 const EMOJI_LIST = [
@@ -68,86 +69,51 @@ export default function Home() {
     );
   }
 
-  const { page } = activeData;
-  const pageType = page.type || 'note';
+  const { page, group } = activeData;
+  const pageType = (
+    group?.id === 'schedule' ? 'schedule' :
+    group?.id === 'todos' ? 'todo' :
+    group?.id === 'notes' ? 'note' :
+    page.type || 'note'
+  );
   const isSchedule = pageType === 'schedule';
   const isTodo = pageType === 'todo';
   const isNote = pageType === 'note';
 
-  const isEmpty = !page.content && isNote;
   const hasCover = Boolean(page.cover);
-
-  // Check if page content contains todo markdown
-  const hasTodos = useMemo(() => {
-    const c = page.content || '';
-    return c.includes('- [ ]') || c.includes('- [x]') || c.includes('- [X]');
-  }, [page.content]);
-
-  // Extract non-todo notes if page has todos
-  const nonTodoNotes = useMemo(() => {
-    if (!hasTodos) return '';
-    const { preamble } = parseTodosFromContent(page.content || '');
-    return preamble;
-  }, [hasTodos, page.content]);
 
   // Auto-resize textarea to fit content and avoid internal scrollbar
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.max(textareaRef.current.scrollHeight, 180)}px`;
+      textareaRef.current.style.height = `${Math.max(textareaRef.current.scrollHeight, 200)}px`;
     }
   }, [page.content, pageType]);
 
   const handleUpdateEditorContent = (newTextareaValue: string) => {
-    if (isTodo || hasTodos) {
-      const { todos } = parseTodosFromContent(page.content || '');
-      const updated = serializeTodosToContent(newTextareaValue, todos);
-      updatePage(page.id, { content: updated });
-    } else {
-      updatePage(page.id, { content: newTextareaValue });
-    }
+    updatePage(page.id, { content: newTextareaValue });
   };
 
   // Commands definition
   const allCommands = useMemo(() => {
-    return getDefaultCommands(
-      (textToInsert) => {
-        if (!textareaRef.current) return;
-        const textarea = textareaRef.current;
-        const currentContent = (isTodo || hasTodos) ? nonTodoNotes : (page.content || '');
-        const start = slashStartIndex >= 0 ? slashStartIndex : textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const newContent = currentContent.slice(0, start) + textToInsert + currentContent.slice(end);
+    return getDefaultCommands((textToInsert) => {
+      if (!textareaRef.current) return;
+      const textarea = textareaRef.current;
+      const currentContent = page.content || '';
+      const start = slashStartIndex >= 0 ? slashStartIndex : textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const newContent = currentContent.slice(0, start) + textToInsert + currentContent.slice(end);
 
-        handleUpdateEditorContent(newContent);
-        setSlashMenuOpen(false);
+      handleUpdateEditorContent(newContent);
+      setSlashMenuOpen(false);
 
-        setTimeout(() => {
-          textarea.focus();
-          const newCursor = start + textToInsert.length;
-          textarea.setSelectionRange(newCursor, newCursor);
-        }, 0);
-      },
-      // Chuyển sang Lên lịch làm việc
-      () => {
-        updatePage(page.id, {
-          type: 'schedule',
-          icon: '📅',
-          content: JSON.stringify(DEFAULT_SCHEDULE),
-        });
-        setSlashMenuOpen(false);
-      },
-      // Chuyển sang Những việc cần làm
-      () => {
-        updatePage(page.id, {
-          type: 'todo',
-          icon: '☑️',
-          content: `- [ ] Công việc mới cần hoàn thành\n`,
-        });
-        setSlashMenuOpen(false);
-      }
-    );
-  }, [page.id, page.content, isTodo, hasTodos, nonTodoNotes, slashStartIndex]);
+      setTimeout(() => {
+        textarea.focus();
+        const newCursor = start + textToInsert.length;
+        textarea.setSelectionRange(newCursor, newCursor);
+      }, 0);
+    });
+  }, [page.id, page.content, slashStartIndex]);
 
   // Filter commands by search query
   const filteredCommands = useMemo(() => {
@@ -183,44 +149,14 @@ export default function Home() {
     updatePage(page.id, { cover: nextCover });
   };
 
-  // Chọn 1 trong 3 mẫu chính khi trang rỗng
-  const handleApplyTemplate = (type: 'note' | 'schedule' | 'todo') => {
-    if (type === 'note') {
-      updatePage(page.id, {
-        type: 'note',
-        icon: '📝',
-        title: page.title || 'Ghi chú mới',
-        content: '',
-      });
-      setTimeout(() => textareaRef.current?.focus(), 0);
-    } else if (type === 'schedule') {
-      updatePage(page.id, {
-        type: 'schedule',
-        icon: '📅',
-        title: page.title || 'Lịch làm việc & Kế hoạch',
-        content: JSON.stringify(DEFAULT_SCHEDULE),
-      });
-    } else if (type === 'todo') {
-      updatePage(page.id, {
-        type: 'todo',
-        icon: '☑️',
-        title: page.title || 'Danh sách việc cần làm',
-        content: `- [x] Nhiệm vụ mẫu đã hoàn thành 🔥
-- [ ] Nhiệm vụ quan trọng cần làm hôm nay ⚡
-- [ ] Nhiệm vụ tiếp theo trong tuần`,
-      });
-    }
-  };
-
   // Focus the editor when clicking on any empty space below the content
   const handleFocusEditor = (e: React.MouseEvent) => {
-    if (isSchedule) return;
+    if (!isNote) return;
     const target = e.target as HTMLElement;
     if (
       target.closest('button') ||
       target.closest('input') ||
       target.closest('textarea') ||
-      target.closest('.todo-item-row') ||
       target.closest('table') ||
       target.closest('[role="dialog"]') ||
       target.closest('[role="menu"]') ||
@@ -466,43 +402,23 @@ export default function Home() {
           </Button>
         </Flex>
 
-        {/* 3 Chức năng chính Switcher */}
+        {/* Nhãn chức năng riêng biệt của trang */}
         <Flex align="center" gap="1">
-          <Button
-            size="1"
-            variant={isNote ? 'solid' : 'ghost'}
-            color={isNote ? 'blue' : 'gray'}
-            onClick={() => {
-              const currentContent = page.content || '';
-              const isJson = currentContent.trim().startsWith('[') || currentContent.trim().startsWith('{');
-              updatePage(page.id, {
-                type: 'note',
-                icon: page.icon === '📅' || page.icon === '☑️' ? '📝' : page.icon,
-                content: isJson ? '' : currentContent,
-              });
-            }}
-            style={{ cursor: 'pointer', height: '24px', fontSize: '12px' }}
-          >
-            <FileText size={12} /> 1. Ghi chú
-          </Button>
-          <Button
-            size="1"
-            variant={isSchedule ? 'solid' : 'ghost'}
-            color={isSchedule ? 'indigo' : 'gray'}
-            onClick={() => updatePage(page.id, { type: 'schedule', icon: '📅', content: page.content || JSON.stringify(DEFAULT_SCHEDULE) })}
-            style={{ cursor: 'pointer', height: '24px', fontSize: '12px' }}
-          >
-            <CalendarDays size={12} /> 2. Lên lịch
-          </Button>
-          <Button
-            size="1"
-            variant={isTodo ? 'solid' : 'ghost'}
-            color={isTodo ? 'amber' : 'gray'}
-            onClick={() => updatePage(page.id, { type: 'todo', icon: '☑️' })}
-            style={{ cursor: 'pointer', height: '24px', fontSize: '12px' }}
-          >
-            <CheckSquare size={12} /> 3. Việc cần làm
-          </Button>
+          {isNote && (
+            <Badge size="1" variant="surface" color="blue" style={{ borderRadius: '6px', padding: '4px 8px' }}>
+              <FileText size={12} /> Chức năng: Ghi chú
+            </Badge>
+          )}
+          {isSchedule && (
+            <Badge size="1" variant="surface" color="indigo" style={{ borderRadius: '6px', padding: '4px 8px' }}>
+              <CalendarDays size={12} /> Chức năng: Lên lịch làm việc
+            </Badge>
+          )}
+          {isTodo && (
+            <Badge size="1" variant="surface" color="amber" style={{ borderRadius: '6px', padding: '4px 8px' }}>
+              <CheckSquare size={12} /> Chức năng: Việc cần làm
+            </Badge>
+          )}
         </Flex>
       </Flex>
 
@@ -566,51 +482,11 @@ export default function Home() {
         />
       </Box>
 
-      {/* 3 Mẫu khởi đầu lớn khi trang mới hoàn toàn */}
-      {isEmpty && (
-        <Box mb="6" style={{ cursor: 'default' }}>
-          <Text size="2" color="gray" mb="3" as="p" weight="medium">
-            Chọn 1 trong 3 chức năng chính để bắt đầu:
-          </Text>
-          <Flex wrap="wrap" gap="3">
-            <Button
-              variant="surface"
-              color="blue"
-              size="2"
-              onClick={() => handleApplyTemplate('note')}
-              style={{ cursor: 'pointer', padding: '12px 16px' }}
-            >
-              <FileText size={16} /> 📝 Ghi chú
-            </Button>
-
-            <Button
-              variant="surface"
-              color="indigo"
-              size="2"
-              onClick={() => handleApplyTemplate('schedule')}
-              style={{ cursor: 'pointer', padding: '12px 16px' }}
-            >
-              <CalendarDays size={16} /> 📅 Lên lịch làm việc
-            </Button>
-
-            <Button
-              variant="surface"
-              color="amber"
-              size="2"
-              onClick={() => handleApplyTemplate('todo')}
-              style={{ cursor: 'pointer', padding: '12px 16px' }}
-            >
-              <CheckSquare size={16} /> ☑️ Những việc cần làm (To-do)
-            </Button>
-          </Flex>
-        </Box>
-      )}
-
       {/* ========================================================
-          HIỂN THỊ NỘI DUNG THEO 3 CHỨC NĂNG CHÍNH
+          HIỂN THỊ NỘI DUNG THEO 3 CHỨC NĂNG CHUYÊN BIỆT
           ======================================================== */}
 
-      {/* 1. CHỨC NĂNG: LÊN LỊCH LÀM VIỆC (SCHEDULE) */}
+      {/* 1. CHỨC NĂNG DUY NHẤT: LÊN LỊCH LÀM VIỆC (SCHEDULE) */}
       {isSchedule && (
         <Box style={{ cursor: 'default' }}>
           <ScheduleBlock
@@ -620,7 +496,7 @@ export default function Home() {
         </Box>
       )}
 
-      {/* 2. CHỨC NĂNG: NHỮNG VIỆC CẦN LÀM (TO-DO LIST) */}
+      {/* 2. CHỨC NĂNG DUY NHẤT: NHỮNG VIỆC CẦN LÀM (TO-DO LIST) */}
       {isTodo && (
         <Box style={{ cursor: 'default' }}>
           <TodoListBlock
@@ -630,17 +506,9 @@ export default function Home() {
         </Box>
       )}
 
-      {/* 3. CHỨC NĂNG: GHI CHÚ (NOTES) HOẶC VÙNG SOẠN THẢO VĂN BẢN (Ẩn khi đang xem lịch để không hiển thị raw JSON) */}
-      {!isSchedule && (
+      {/* 3. CHỨC NĂNG DUY NHẤT: GHI CHÚ (NOTES) */}
+      {isNote && (
         <Box style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-          {/* Trường hợp trang Note có sẵn checklist hoặc to-do xen kẽ */}
-          {isNote && hasTodos && (
-            <TodoListBlock
-              content={page.content || ''}
-              onChange={(newContent) => updatePage(page.id, { content: newContent })}
-            />
-          )}
-
           {/* Khung soạn thảo văn bản ghi chú với Slash commands */}
           <Box style={{ position: 'relative' }}>
             <SlashCommandMenu
@@ -659,17 +527,13 @@ export default function Home() {
 
             <textarea
               ref={textareaRef}
-              value={(isTodo || hasTodos) ? nonTodoNotes : (page.content || '')}
+              value={page.content || ''}
               onChange={handleTextareaChange}
               onKeyDown={handleTextareaKeyDown}
-              placeholder={
-                isTodo || hasTodos
-                  ? "Thêm ghi chú bổ sung cho danh sách việc cần làm hoặc dùng '/'..."
-                  : "Press 'space' for AI or '/' for commands"
-              }
+              placeholder="Nhấn 'Space' để gọi AI hoặc gõ '/' để chèn định dạng..."
               style={{
                 width: '100%',
-                minHeight: '200px',
+                minHeight: '220px',
                 border: 'none',
                 outline: 'none',
                 resize: 'none',
