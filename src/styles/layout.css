@@ -1,0 +1,30 @@
+/* Master App Layout Frame */
+.app-frame {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  background-color: #ffffff;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Decorative strips disabled for clean sidebar layout */
+.decorative-left-strip {
+  display: none;
+}
+
+.decorative-bottom-strip {
+  display: none;
+}
+
+/* Main Content Wrapper */
+.main-content {
+  flex: 1;
+  background-color: var(--bg-main);
+  display: flex;
+  flex-direction: column;
+  padding: 28px 40px 40px 40px;
+  position: relative;
+  overflow-y: auto;
+  min-height: 100vh;
+}

@@ -1,25 +1,32 @@
-import React, { useState, useMemo } from 'react';
-import { Sidebar } from '../components/Sidebar';
-import { Header } from '../components/Header';
-import { CategoryTabs } from '../components/CategoryTabs';
-import { NoteCard } from '../components/NoteCard';
-import { AddNoteModal } from '../components/AddNoteModal';
+import React, { useState } from 'react';
 import {
-  INITIAL_NOTES,
-  INITIAL_NOTIFICATIONS,
-  USER_PROFILE
-} from '../data/mockNotes';
-import type { NoteItem, NotificationItem } from '../types/note';
+  Sidebar,
+  Header,
+  CategoryTabs,
+  NoteCard,
+  AddNoteModal
+} from '../components';
+import { useNotes } from '../hooks/useNotes';
+import { INITIAL_NOTIFICATIONS, USER_PROFILE } from '../data/mockNotes';
+import type { NotificationItem } from '../types';
 
 export function Home() {
   const [sidebarTab, setSidebarTab] = useState<string>('projects');
-  const [activeCategory, setActiveCategory] = useState<string>('Projects');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [notes, setNotes] = useState<NoteItem[]>(INITIAL_NOTES);
   const [notifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
-  // Notification popover is open by default as shown in the screenshot
   const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
+
+  const {
+    filteredNotes,
+    activeCategory,
+    setActiveCategory,
+    searchQuery,
+    setSearchQuery,
+    handleAddNote,
+    handleDeleteNote,
+    handleRenameTag,
+    handleAddTagClick
+  } = useNotes();
 
   const handleSelectSidebarTab = (tab: string) => {
     setSidebarTab(tab);
@@ -33,75 +40,6 @@ export function Home() {
       setActiveCategory('All');
     } else {
       setActiveCategory(tab);
-    }
-  };
-
-  // Filter notes by search and category
-  const filteredNotes = useMemo(() => {
-    return notes.filter((note) => {
-      // Filter by active category tab
-      if (activeCategory !== 'All') {
-        if (activeCategory === 'Personal' && note.tagType !== 'personal') {
-          return false;
-        }
-        if (activeCategory === 'Projects' && note.tagType !== 'projects') {
-          return false;
-        }
-        if (activeCategory === 'Business' && note.tag !== 'Business') {
-          return false;
-        }
-        if (
-          !['Personal', 'Projects', 'Business'].includes(activeCategory) &&
-          note.tag.toLowerCase() !== activeCategory.toLowerCase()
-        ) {
-          return false;
-        }
-      }
-
-      // Filter by search query
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        const matchesTitle = note.title.toLowerCase().includes(query);
-        const matchesContent = note.content.toLowerCase().includes(query);
-        const matchesTag = note.tag.toLowerCase().includes(query);
-        return matchesTitle || matchesContent || matchesTag;
-      }
-
-      return true;
-    });
-  }, [notes, activeCategory, searchQuery]);
-
-  const handleDeleteNote = (id: string) => {
-    setNotes((prev) => prev.filter((note) => note.id !== id));
-  };
-
-  const handleAddNote = (newNote: NoteItem) => {
-    setNotes((prev) => [newNote, ...prev]);
-  };
-
-  const handleAddTagClick = (note: NoteItem) => {
-    const customTag = prompt('Enter new tag for this note:', 'Idea');
-    if (customTag && customTag.trim()) {
-      setNotes((prev) =>
-        prev.map((n) =>
-          n.id === note.id
-            ? { ...n, tag: customTag.trim(), tagType: 'personal' }
-            : n
-        )
-      );
-    }
-  };
-
-  const handleRenameTag = (tagId: string, newName: string) => {
-    setNotes((prev) =>
-      prev.map((n) =>
-        n.tag.toLowerCase() === tagId.toLowerCase()
-          ? { ...n, tag: newName }
-          : n
-      )
-    );
-    if (activeCategory.toLowerCase() === tagId.toLowerCase()) {
-      setActiveCategory(newName);
     }
   };
 
@@ -160,4 +98,5 @@ export function Home() {
     </div>
   );
 }
+
 export default Home;

@@ -27,3 +27,9 @@ export interface NotificationItem {
   subtitle: string;
   isOverdue?: boolean;
 }
+
+export interface UserProfile {
+  name: string;
+  avatarUrl: string;
+  unreadNotifications: number;
+}
