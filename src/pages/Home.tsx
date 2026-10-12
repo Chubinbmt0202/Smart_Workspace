@@ -1,564 +1,141 @@
-import { useEffect, useRef, useMemo, useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { Sidebar } from '../components/Sidebar';
+import { Header } from '../components/Header';
+import { CategoryTabs } from '../components/CategoryTabs';
+import { NoteCard } from '../components/NoteCard';
+import { AddNoteModal } from '../components/AddNoteModal';
 import {
-  Text,
-  Box,
-  Flex,
-  Button,
-  IconButton,
-  Popover,
-  Badge,
-} from '@radix-ui/themes';
-import {
-  FileText,
-  Smile,
-  Image as ImageIcon,
-  CheckSquare,
-  Plus,
-  CalendarDays,
-} from 'lucide-react';
-import { usePageStore, useActivePage } from '../store/pageStore';
-import SlashCommandMenu, { getDefaultCommands } from '../components/Editor/SlashCommandMenu';
-import TodoListBlock from '../components/Editor/TodoListBlock';
-import ScheduleBlock, { DEFAULT_SCHEDULE } from '../components/Editor/ScheduleBlock';
+  INITIAL_NOTES,
+  INITIAL_NOTIFICATIONS,
+  USER_PROFILE
+} from '../data/mockNotes';
+import type { NoteItem, NotificationItem } from '../types/note';
 
-const EMOJI_LIST = [
-  '📄', '📝', '💡', '🚀', '🤖', '📊', '🎨', '📁',
-  '🎯', '⭐', '🔥', '💻', '🧠', '⚡', '📌', '🏆',
-  '📚', '📅', '💬', '✨', '🔍', '🛠️', '🌿', '🔮'
-];
+export function Home() {
+  const [sidebarTab, setSidebarTab] = useState<string>('projects');
+  const [activeCategory, setActiveCategory] = useState<string>('Projects');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [notes, setNotes] = useState<NoteItem[]>(INITIAL_NOTES);
+  const [notifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+  // Notification popover is open by default as shown in the screenshot
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(true);
+  const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
 
-const COVERS = [
-  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  'linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%)',
-  'linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%)',
-  'linear-gradient(to top, #0ba360 0%, #3cba92 100%)',
-  'linear-gradient(to right, #434343 0%, black 100%)',
-  'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-];
-
-export default function Home() {
-  const activeData = useActivePage();
-  const updatePage = usePageStore((state) => state.updatePage);
-  const addPage = usePageStore((state) => state.addPage);
-
-  const titleInputRef = useRef<HTMLInputElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // Slash Command State
-  const [slashMenuOpen, setSlashMenuOpen] = useState(false);
-  const [slashQuery, setSlashQuery] = useState('');
-  const [slashStartIndex, setSlashStartIndex] = useState(-1);
-  const [slashPosition, setSlashPosition] = useState({ top: 40, left: 0 });
-  const [selectedIndex, setSelectedIndex] = useState(0);
-
-  // Focus title automatically if page is freshly created with empty title
-  useEffect(() => {
-    if (activeData?.page && !activeData.page.title) {
-      titleInputRef.current?.focus();
+  const handleSelectSidebarTab = (tab: string) => {
+    setSidebarTab(tab);
+    if (tab === 'projects') {
+      setActiveCategory('Projects');
+    } else if (tab === 'business') {
+      setActiveCategory('Business');
+    } else if (tab === 'primary') {
+      setActiveCategory('Personal');
+    } else if (tab === 'all-inboxes') {
+      setActiveCategory('All');
     }
-  }, [activeData?.page?.id]);
-
-  if (!activeData) {
-    return (
-      <Flex direction="column" align="center" justify="center" gap="4" py="9" style={{ minHeight: '50vh' }}>
-        <Text size="3" color="gray">Chưa chọn trang nào hoặc danh sách đang trống.</Text>
-        <Button onClick={() => addPage('notes')} variant="solid" color="gray" style={{ cursor: 'pointer' }}>
-          <Plus size={16} /> Tạo trang ghi chú mới
-        </Button>
-      </Flex>
-    );
-  }
-
-  const { page, group } = activeData;
-  const pageType = (
-    group?.id === 'schedule' ? 'schedule' :
-    group?.id === 'todos' ? 'todo' :
-    group?.id === 'notes' ? 'note' :
-    page.type || 'note'
-  );
-  const isSchedule = pageType === 'schedule';
-  const isTodo = pageType === 'todo';
-  const isNote = pageType === 'note';
-
-  const hasCover = Boolean(page.cover);
-
-  // Auto-resize textarea to fit content and avoid internal scrollbar
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.max(textareaRef.current.scrollHeight, 200)}px`;
-    }
-  }, [page.content, pageType]);
-
-  const handleUpdateEditorContent = (newTextareaValue: string) => {
-    updatePage(page.id, { content: newTextareaValue });
   };
 
-  // Commands definition
-  const allCommands = useMemo(() => {
-    return getDefaultCommands((textToInsert) => {
-      if (!textareaRef.current) return;
-      const textarea = textareaRef.current;
-      const currentContent = page.content || '';
-      const start = slashStartIndex >= 0 ? slashStartIndex : textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const newContent = currentContent.slice(0, start) + textToInsert + currentContent.slice(end);
+  // Filter notes by search and category
+  const filteredNotes = useMemo(() => {
+    return notes.filter((note) => {
+      // Filter by active category tab
+      if (activeCategory !== 'All') {
+        if (activeCategory === 'Personal' && note.tagType !== 'personal') {
+          return false;
+        }
+        if (activeCategory === 'Projects' && note.tagType !== 'projects') {
+          return false;
+        }
+        if (activeCategory === 'Business' && note.tag !== 'Business') {
+          return false;
+        }
+      }
 
-      handleUpdateEditorContent(newContent);
-      setSlashMenuOpen(false);
+      // Filter by search query
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        const matchesTitle = note.title.toLowerCase().includes(query);
+        const matchesContent = note.content.toLowerCase().includes(query);
+        const matchesTag = note.tag.toLowerCase().includes(query);
+        return matchesTitle || matchesContent || matchesTag;
+      }
 
-      setTimeout(() => {
-        textarea.focus();
-        const newCursor = start + textToInsert.length;
-        textarea.setSelectionRange(newCursor, newCursor);
-      }, 0);
+      return true;
     });
-  }, [page.id, page.content, slashStartIndex]);
+  }, [notes, activeCategory, searchQuery]);
 
-  // Filter commands by search query
-  const filteredCommands = useMemo(() => {
-    if (!slashQuery.trim()) return allCommands;
-    const q = slashQuery.toLowerCase();
-    return allCommands.filter(
-      (cmd) =>
-        cmd.title.toLowerCase().includes(q) ||
-        cmd.description.toLowerCase().includes(q) ||
-        cmd.keywords.some((k) => k.toLowerCase().includes(q))
-    );
-  }, [allCommands, slashQuery]);
-
-  const handleTitleChange = (newTitle: string) => {
-    updatePage(page.id, { title: newTitle });
+  const handleDeleteNote = (id: string) => {
+    setNotes((prev) => prev.filter((note) => note.id !== id));
   };
 
-  const handleIconSelect = (icon: string) => {
-    updatePage(page.id, { icon });
+  const handleAddNote = (newNote: NoteItem) => {
+    setNotes((prev) => [newNote, ...prev]);
   };
 
-  const handleToggleCover = () => {
-    if (hasCover) {
-      updatePage(page.id, { cover: undefined });
-    } else {
-      updatePage(page.id, { cover: COVERS[0] });
-    }
-  };
-
-  const handleChangeCover = () => {
-    const currentIndex = COVERS.indexOf(page.cover || '');
-    const nextCover = COVERS[(currentIndex + 1) % COVERS.length];
-    updatePage(page.id, { cover: nextCover });
-  };
-
-  // Focus the editor when clicking on any empty space below the content
-  const handleFocusEditor = (e: React.MouseEvent) => {
-    if (!isNote) return;
-    const target = e.target as HTMLElement;
-    if (
-      target.closest('button') ||
-      target.closest('input') ||
-      target.closest('textarea') ||
-      target.closest('table') ||
-      target.closest('[role="dialog"]') ||
-      target.closest('[role="menu"]') ||
-      target.closest('[data-radix-popper-content-wrapper]')
-    ) {
-      return;
-    }
-
-    if (textareaRef.current) {
-      textareaRef.current.focus();
-      const length = textareaRef.current.value.length;
-      textareaRef.current.setSelectionRange(length, length);
-    }
-  };
-
-  // Textarea input and slash trigger detection
-  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value;
-    const cursor = e.target.selectionStart;
-
-    handleUpdateEditorContent(value);
-
-    // Look for slash before cursor
-    const textBeforeCursor = value.slice(0, cursor);
-    const lastSlashIndex = textBeforeCursor.lastIndexOf('/');
-
-    if (lastSlashIndex !== -1) {
-      const charBeforeSlash = lastSlashIndex > 0 ? textBeforeCursor[lastSlashIndex - 1] : '\n';
-      const textAfterSlash = textBeforeCursor.slice(lastSlashIndex + 1);
-
-      if (
-        (charBeforeSlash === '\n' || charBeforeSlash === ' ') &&
-        !textAfterSlash.includes('\n') &&
-        textAfterSlash.length <= 15
-      ) {
-        setSlashMenuOpen(true);
-        setSlashQuery(textAfterSlash);
-        setSlashStartIndex(lastSlashIndex);
-        setSelectedIndex(0);
-
-        const linesBefore = textBeforeCursor.split('\n').length;
-        const top = Math.min(linesBefore * 27 + 8, 450);
-        setSlashPosition({ top, left: 8 });
-        return;
-      }
-    }
-
-    setSlashMenuOpen(false);
-  };
-
-  const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Navigate slash menu if open
-    if (slashMenuOpen && filteredCommands.length > 0) {
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        setSelectedIndex((prev) => (prev + 1) % filteredCommands.length);
-        return;
-      }
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setSelectedIndex((prev) => (prev - 1 + filteredCommands.length) % filteredCommands.length);
-        return;
-      }
-      if (e.key === 'Enter' || e.key === 'Tab') {
-        e.preventDefault();
-        const selected = filteredCommands[selectedIndex];
-        if (selected) {
-          selected.execute();
-        }
-        return;
-      }
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        setSlashMenuOpen(false);
-        return;
-      }
-    }
-
-    // Press 'space' for AI on empty page
-    if (e.key === ' ' && (!page.content || page.content.trim() === '')) {
-      e.preventDefault();
-      updatePage(page.id, {
-        content: '✨ [AI Assistant]: Tôi có thể giúp gì cho trang này của bạn? (Gõ yêu cầu và nhấn Enter)... \n\n',
-      });
-      return;
-    }
-
-    // Xử lý Enter và Shift + Enter cho các khối block
-    if (e.key === 'Enter') {
-      const textarea = textareaRef.current;
-      if (!textarea) return;
-
-      const value = textarea.value;
-      const cursor = textarea.selectionStart;
-
-      const textBeforeCursor = value.slice(0, cursor);
-      const textAfterCursor = value.slice(cursor);
-      const lineStartIndex = textBeforeCursor.lastIndexOf('\n') + 1;
-      const lineEndRelative = textAfterCursor.indexOf('\n');
-      const lineEndIndex = lineEndRelative === -1 ? value.length : cursor + lineEndRelative;
-      const currentLine = value.slice(lineStartIndex, lineEndIndex);
-
-      const todoMatch = currentLine.match(/^(\s*-\s*\[([ xX])\]\s*)/);
-      const bulletMatch = currentLine.match(/^(\s*[-*•]\s+)/);
-      const numberMatch = currentLine.match(/^(\s*(\d+)\.\s+)/);
-      const quoteMatch = currentLine.match(/^(\s*>\s*(💡\s*)?)/);
-      const headingMatch = currentLine.match(/^(\s*#{1,6}\s+)/);
-
-      // TRƯỜNG HỢP 1: SHIFT + ENTER -> Vẫn tiếp tục sử dụng khối block đó
-      if (e.shiftKey) {
-        e.preventDefault();
-
-        let nextPrefix = '';
-        if (numberMatch) {
-          const currentNum = parseInt(numberMatch[2], 10);
-          nextPrefix = `${currentNum + 1}. `;
-        } else if (todoMatch) {
-          nextPrefix = '- [ ] ';
-        } else if (bulletMatch) {
-          nextPrefix = '- ';
-        } else if (quoteMatch) {
-          nextPrefix = quoteMatch[0];
-        } else if (headingMatch) {
-          nextPrefix = headingMatch[0];
-        }
-
-        const inserted = '\n' + nextPrefix;
-        const newText = textBeforeCursor + inserted + textAfterCursor;
-        handleUpdateEditorContent(newText);
-
-        setTimeout(() => {
-          if (textareaRef.current) {
-            const newPos = cursor + inserted.length;
-            textareaRef.current.focus();
-            textareaRef.current.setSelectionRange(newPos, newPos);
-          }
-        }, 0);
-        return;
-      }
-
-      // TRƯỜNG HỢP 2: ENTER THƯỜNG -> Danh sách cũ vẫn ở đó và chuyển ngay sang một dòng văn bản bình thường!
-      if (!e.shiftKey) {
-        e.preventDefault();
-
-        const inserted = '\n';
-        const newText = textBeforeCursor + inserted + textAfterCursor;
-        handleUpdateEditorContent(newText);
-
-        setTimeout(() => {
-          if (textareaRef.current) {
-            const newPos = cursor + inserted.length;
-            textareaRef.current.focus();
-            textareaRef.current.setSelectionRange(newPos, newPos);
-          }
-        }, 0);
-        return;
-      }
+  const handleAddTagClick = (note: NoteItem) => {
+    const customTag = prompt('Enter new tag for this note:', 'Idea');
+    if (customTag && customTag.trim()) {
+      setNotes((prev) =>
+        prev.map((n) =>
+          n.id === note.id
+            ? { ...n, tag: customTag.trim(), tagType: 'personal' }
+            : n
+        )
+      );
     }
   };
 
   return (
-    <Box
-      key={page.id}
-      onClick={handleFocusEditor}
-      style={{
-        width: '100%',
-        flexGrow: 1,
-        minHeight: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'relative',
-        cursor: 'text',
-      }}
-    >
-      {/* Cover Image */}
-      {hasCover && (
-        <Box
-          style={{
-            height: '180px',
-            borderRadius: '8px',
-            marginBottom: '24px',
-            background: page.cover,
-            position: 'relative',
-            cursor: 'default',
-          }}
-        >
-          <Button
-            size="1"
-            variant="surface"
-            color="gray"
-            onClick={handleChangeCover}
-            style={{
-              position: 'absolute',
-              bottom: '12px',
-              right: '12px',
-              cursor: 'pointer',
-              backgroundColor: 'rgba(255, 255, 255, 0.85)',
-              backdropFilter: 'blur(4px)',
-            }}
-          >
-            Đổi màu bìa
-          </Button>
-        </Box>
-      )}
+    <div className="app-frame">
+      {/* Sidebar */}
+      <Sidebar
+        currentTab={sidebarTab}
+        onSelectTab={handleSelectSidebarTab}
+        onOpenAddModal={() => setIsAddModalOpen(true)}
+        onToggleNotifications={() => setIsNotificationsOpen((prev) => !prev)}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+      />
 
-      {/* Top action triggers & 3 Chức năng Switcher */}
-      <Flex justify="between" align="center" mb="2" wrap="wrap" gap="2" style={{ cursor: 'default' }}>
-        <Flex gap="2" align="center">
-          <Popover.Root>
-            <Popover.Trigger>
-              <Button size="1" variant="ghost" color="gray" style={{ cursor: 'pointer', padding: '4px 6px' }}>
-                <Smile size={14} />
-                {page.icon ? 'Đổi biểu tượng' : 'Thêm biểu tượng'}
-              </Button>
-            </Popover.Trigger>
-            <Popover.Content size="1" style={{ width: '260px' }}>
-              <Text size="1" color="gray" mb="2" weight="medium">Chọn biểu tượng Notion</Text>
-              <Flex wrap="wrap" gap="2">
-                {EMOJI_LIST.map((emoji) => (
-                  <IconButton
-                    key={emoji}
-                    variant="ghost"
-                    size="2"
-                    onClick={() => handleIconSelect(emoji)}
-                    style={{ cursor: 'pointer', fontSize: '18px' }}
-                  >
-                    {emoji}
-                  </IconButton>
-                ))}
-              </Flex>
-            </Popover.Content>
-          </Popover.Root>
-
-          <Button
-            size="1"
-            variant="ghost"
-            color="gray"
-            onClick={handleToggleCover}
-            style={{ cursor: 'pointer', padding: '4px 6px' }}
-          >
-            <ImageIcon size={14} />
-            {hasCover ? 'Xóa ảnh bìa' : 'Thêm ảnh bìa'}
-          </Button>
-        </Flex>
-
-        {/* Nhãn chức năng riêng biệt của trang */}
-        <Flex align="center" gap="1">
-          {isNote && (
-            <Badge size="1" variant="surface" color="blue" style={{ borderRadius: '6px', padding: '4px 8px' }}>
-              <FileText size={12} /> Chức năng: Ghi chú
-            </Badge>
-          )}
-          {isSchedule && (
-            <Badge size="1" variant="surface" color="indigo" style={{ borderRadius: '6px', padding: '4px 8px' }}>
-              <CalendarDays size={12} /> Chức năng: Lên lịch làm việc
-            </Badge>
-          )}
-          {isTodo && (
-            <Badge size="1" variant="surface" color="amber" style={{ borderRadius: '6px', padding: '4px 8px' }}>
-              <CheckSquare size={12} /> Chức năng: Việc cần làm
-            </Badge>
-          )}
-        </Flex>
-      </Flex>
-
-      {/* Page Icon Banner */}
-      {page.icon && (
-        <Popover.Root>
-          <Popover.Trigger>
-            <Box
-              style={{
-                fontSize: '44px',
-                cursor: 'pointer',
-                display: 'inline-block',
-                lineHeight: 1,
-                marginBottom: '12px',
-                userSelect: 'none',
-              }}
-              title="Click để đổi icon"
-            >
-              {page.icon}
-            </Box>
-          </Popover.Trigger>
-          <Popover.Content size="1" style={{ width: '260px' }}>
-            <Text size="1" color="gray" mb="2" weight="medium">Chọn biểu tượng Notion</Text>
-            <Flex wrap="wrap" gap="2">
-              {EMOJI_LIST.map((emoji) => (
-                <IconButton
-                  key={emoji}
-                  variant="ghost"
-                  size="2"
-                  onClick={() => handleIconSelect(emoji)}
-                  style={{ cursor: 'pointer', fontSize: '18px' }}
-                >
-                  {emoji}
-                </IconButton>
-              ))}
-            </Flex>
-          </Popover.Content>
-        </Popover.Root>
-      )}
-
-      {/* Page Title */}
-      <Box mb="5">
-        <input
-          ref={titleInputRef}
-          type="text"
-          value={page.title}
-          onChange={(e) => handleTitleChange(e.target.value)}
-          placeholder="Untitled"
-          style={{
-            width: '100%',
-            fontSize: '34px',
-            fontWeight: 700,
-            color: 'var(--gray-12)',
-            border: 'none',
-            outline: 'none',
-            background: 'transparent',
-            padding: 0,
-            margin: 0,
-            fontFamily: 'inherit',
-          }}
+      {/* Main Content Area */}
+      <main className="main-content">
+        {/* Header */}
+        <Header
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          notifications={notifications}
+          isNotificationsOpen={isNotificationsOpen}
+          onToggleNotifications={() => setIsNotificationsOpen((prev) => !prev)}
+          onCloseNotifications={() => setIsNotificationsOpen(false)}
+          userName={USER_PROFILE.name}
+          userAvatar={USER_PROFILE.avatarUrl}
         />
-      </Box>
 
-      {/* ========================================================
-          HIỂN THỊ NỘI DUNG THEO 3 CHỨC NĂNG CHUYÊN BIỆT
-          ======================================================== */}
+        {/* Category Tabs */}
+        <CategoryTabs
+          activeTab={activeCategory}
+          onSelectTab={setActiveCategory}
+        />
 
-      {/* 1. CHỨC NĂNG DUY NHẤT: LÊN LỊCH LÀM VIỆC (SCHEDULE) */}
-      {isSchedule && (
-        <Box style={{ cursor: 'default' }}>
-          <ScheduleBlock
-            content={page.content || JSON.stringify(DEFAULT_SCHEDULE)}
-            onChange={(newContent) => updatePage(page.id, { content: newContent })}
-          />
-        </Box>
-      )}
-
-      {/* 2. CHỨC NĂNG DUY NHẤT: NHỮNG VIỆC CẦN LÀM (TO-DO LIST) */}
-      {isTodo && (
-        <Box style={{ cursor: 'default' }}>
-          <TodoListBlock
-            content={page.content || ''}
-            onChange={(newContent) => updatePage(page.id, { content: newContent })}
-          />
-        </Box>
-      )}
-
-      {/* 3. CHỨC NĂNG DUY NHẤT: GHI CHÚ (NOTES) */}
-      {isNote && (
-        <Box style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-          {/* Khung soạn thảo văn bản ghi chú với Slash commands */}
-          <Box style={{ position: 'relative' }}>
-            <SlashCommandMenu
-              isOpen={slashMenuOpen}
-              query={slashQuery}
-              position={slashPosition}
-              onClose={() => setSlashMenuOpen(false)}
-              onSelectCommand={(cmdId) => {
-                const cmd = filteredCommands.find((c) => c.id === cmdId);
-                if (cmd) cmd.execute();
-              }}
-              selectedIndex={selectedIndex}
-              onHoverIndex={setSelectedIndex}
-              commands={filteredCommands}
+        {/* Notes Grid */}
+        <div className="notes-grid">
+          {filteredNotes.map((note) => (
+            <NoteCard
+              key={note.id}
+              note={note}
+              onDeleteNote={handleDeleteNote}
+              onAddTagClick={handleAddTagClick}
             />
+          ))}
+        </div>
+      </main>
 
-            <textarea
-              ref={textareaRef}
-              value={page.content || ''}
-              onChange={handleTextareaChange}
-              onKeyDown={handleTextareaKeyDown}
-              placeholder="Nhấn 'Space' để gọi AI hoặc gõ '/' để chèn định dạng..."
-              style={{
-                width: '100%',
-                minHeight: '220px',
-                border: 'none',
-                outline: 'none',
-                resize: 'none',
-                background: 'transparent',
-                fontSize: '15px',
-                lineHeight: 1.7,
-                color: 'var(--gray-12)',
-                fontFamily: 'inherit',
-                padding: 0,
-              }}
-            />
-          </Box>
-
-          {/* Vùng trống bên dưới - click vào để kích hoạt con trỏ soạn thảo */}
-          <Box
-            style={{
-              flexGrow: 1,
-              minHeight: '260px',
-              cursor: 'text',
-              width: '100%',
-            }}
-            onClick={handleFocusEditor}
-          />
-        </Box>
-      )}
-    </Box>
+      {/* Add Note Modal */}
+      <AddNoteModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onAddNote={handleAddNote}
+      />
+    </div>
   );
 }
+export default Home;
