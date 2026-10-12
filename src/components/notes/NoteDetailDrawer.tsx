@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   Trash2,
@@ -6,9 +6,14 @@ import {
   Clock,
   Paperclip,
   Calendar,
-  Plus,
   Check,
-  Tag
+  Tag,
+  Download,
+  Plus,
+  FileText,
+  FileImage,
+  FileSpreadsheet,
+  File
 } from 'lucide-react';
 import type { NoteItem } from '../../types/note';
 import type { TagItem } from '../../types/tag';
@@ -35,12 +40,15 @@ export const NoteDetailDrawer: React.FC<NoteDetailDrawerProps> = ({
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tag, setTag] = useState('');
-  const [isUrgent, setIsUrgent] = useState(false);
   const [reminderDay, setReminderDay] = useState('Today');
   const [reminderTime, setReminderTime] = useState('12.00');
   const [isPinned, setIsPinned] = useState(false);
   const [avatars, setAvatars] = useState<{ name: string; avatarUrl: string }[]>([]);
+  const [attachments, setAttachments] = useState<
+    { name: string; size?: string; type?: string }[]
+  >([]);
   const [isSavedRecently, setIsSavedRecently] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sync state when note prop changes
   useEffect(() => {
@@ -48,12 +56,32 @@ export const NoteDetailDrawer: React.FC<NoteDetailDrawerProps> = ({
       setTitle(note.title);
       setContent(note.content);
       setTag(note.tag);
-      setIsUrgent(Boolean(note.reminder?.isUrgent));
       setReminderDay(note.reminder?.day || 'Today');
       setReminderTime(note.reminder?.time || '12.00');
       setAvatars(note.avatars || []);
       setIsPinned(false);
       setIsSavedRecently(false);
+
+      if (note.attachments && note.attachments.length > 0) {
+        setAttachments(note.attachments);
+      } else if (note.attachmentCount && note.attachmentCount > 0) {
+        const mockFiles = [
+          { name: 'Tai_lieu_du_an.pdf', size: '2.4 MB', type: 'application/pdf' },
+          {
+            name: 'Ke_hoach_chi_tiet.docx',
+            size: '1.2 MB',
+            type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+          },
+          {
+            name: 'Bang_so_lieu_tong_hop.xlsx',
+            size: '850 KB',
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+          }
+        ].slice(0, note.attachmentCount);
+        setAttachments(mockFiles);
+      } else {
+        setAttachments([]);
+      }
     }
   }, [note]);
 
@@ -82,13 +110,14 @@ export const NoteDetailDrawer: React.FC<NoteDetailDrawerProps> = ({
         tag === 'Personal'
           ? 'personal'
           : tag === 'Projects'
-          ? 'projects'
-          : 'custom',
+            ? 'projects'
+            : 'custom',
       avatars,
+      attachments,
+      attachmentCount: attachments.length > 0 ? attachments.length : undefined,
       reminder: {
         time: reminderTime,
-        day: reminderDay,
-        isUrgent
+        day: reminderDay
       }
     };
 
@@ -104,17 +133,42 @@ export const NoteDetailDrawer: React.FC<NoteDetailDrawerProps> = ({
     }
   };
 
-  const handleAddCollaborator = () => {
-    const name = prompt('Nhập tên người tham gia:', 'Alex');
-    if (name && name.trim()) {
-      const newAvatar = {
-        name: name.trim(),
-        avatarUrl: `https://images.unsplash.com/photo-${1534528741775 + avatars.length * 100}?w=150&auto=format&fit=crop&q=80`
-      };
-      const nextAvatars = [...avatars, newAvatar];
-      setAvatars(nextAvatars);
-      onUpdateNote({ ...note, avatars: nextAvatars });
+  const handleRemoveAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAddFiles = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    const formatSize = (bytes: number): string => {
+      if (bytes < 1024) return `${bytes} B`;
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    };
+
+    const newFiles = Array.from(files).map((f) => ({
+      name: f.name,
+      size: formatSize(f.size),
+      type: f.type
+    }));
+
+    setAttachments((prev) => [...prev, ...newFiles]);
+  };
+
+  const getFileIcon = (type?: string, name?: string) => {
+    const fileName = (name || '').toLowerCase();
+    const fileType = (type || '').toLowerCase();
+
+    if (fileType.includes('image') || /\.(png|jpe?g|gif|webp|svg)$/i.test(fileName)) {
+      return <FileImage size={18} className="attachment-icon image" />;
     }
+    if (fileType.includes('sheet') || fileType.includes('excel') || /\.(xlsx?|csv)$/i.test(fileName)) {
+      return <FileSpreadsheet size={18} className="attachment-icon sheet" />;
+    }
+    if (fileType.includes('pdf') || /\.pdf$/i.test(fileName)) {
+      return <FileText size={18} className="attachment-icon pdf" />;
+    }
+    return <File size={18} className="attachment-icon file" />;
   };
 
   const getTagBadgeStyle = () => {
@@ -195,18 +249,12 @@ export const NoteDetailDrawer: React.FC<NoteDetailDrawerProps> = ({
               <span>{note.date}</span>
             </span>
 
-            {note.attachmentCount && note.attachmentCount > 0 ? (
+            {attachments.length > 0 ? (
               <span className="meta-chip">
                 <Paperclip size={13} />
-                <span>{note.attachmentCount} tệp đính kèm</span>
+                <span>{attachments.length} tệp đính kèm</span>
               </span>
             ) : null}
-
-            {isUrgent && (
-              <span className="meta-chip urgent">
-                <span>Khẩn cấp (Urgent)</span>
-              </span>
-            )}
           </div>
 
           {/* Title input */}
@@ -260,30 +308,75 @@ export const NoteDetailDrawer: React.FC<NoteDetailDrawerProps> = ({
             </div>
           </div>
 
-          {/* Collaborators / Members */}
+          {/* Attachments Section */}
           <div className="drawer-section">
-            <span className="drawer-section-title">Người tham gia</span>
-            <div className="drawer-members-list">
-              {avatars.map((av, index) => (
-                <div key={index} className="drawer-member-pill">
-                  <img
-                    src={av.avatarUrl}
-                    alt={av.name}
-                    className="drawer-member-avatar"
-                  />
-                  <span className="drawer-member-name">{av.name}</span>
-                </div>
-              ))}
-
+            <div className="drawer-section-header">
+              <span className="drawer-section-title">
+                Tệp đính kèm ({attachments.length})
+              </span>
               <button
                 type="button"
-                className="btn-add-member"
-                onClick={handleAddCollaborator}
+                className="btn-drawer-add-file"
+                onClick={() => fileInputRef.current?.click()}
               >
                 <Plus size={13} />
-                <span>Thêm người</span>
+                <span>Thêm tệp</span>
               </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                style={{ display: 'none' }}
+                onChange={(e) => handleAddFiles(e.target.files)}
+              />
             </div>
+
+            {attachments.length > 0 ? (
+              <div className="drawer-attachments-list">
+                {attachments.map((file, idx) => (
+                  <div key={idx} className="drawer-attachment-card">
+                    <div className="attachment-card-left">
+                      <div className="attachment-icon-box">
+                        {getFileIcon(file.type, file.name)}
+                      </div>
+                      <div className="attachment-card-info">
+                        <span className="attachment-name" title={file.name}>
+                          {file.name}
+                        </span>
+                        {file.size && (
+                          <span className="attachment-size">{file.size}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="attachment-card-actions">
+                      <button
+                        type="button"
+                        className="btn-attachment-action"
+                        onClick={() => alert(`Đang tải xuống: ${file.name}`)}
+                        title="Tải xuống tệp"
+                        aria-label="Tải xuống"
+                      >
+                        <Download size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-attachment-action delete"
+                        onClick={() => handleRemoveAttachment(idx)}
+                        title="Xóa tệp đính kèm"
+                        aria-label="Xóa tệp"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="drawer-attachments-empty">
+                <Paperclip size={16} />
+                <span>Chưa có tệp đính kèm nào</span>
+              </div>
+            )}
           </div>
 
           {/* Reminder Section */}
@@ -297,15 +390,6 @@ export const NoteDetailDrawer: React.FC<NoteDetailDrawerProps> = ({
                   <span className="drawer-reminder-day">{reminderDay}</span>
                 </div>
               </div>
-
-              <label className="checkbox-label" style={{ fontSize: '13px' }}>
-                <input
-                  type="checkbox"
-                  checked={isUrgent}
-                  onChange={(e) => setIsUrgent(e.target.checked)}
-                />
-                <span>Bật khẩn cấp</span>
-              </label>
             </div>
           </div>
         </div>

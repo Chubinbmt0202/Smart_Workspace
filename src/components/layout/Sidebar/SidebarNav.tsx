@@ -73,11 +73,10 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
           <div
             role="button"
             tabIndex={0}
-            className={`menu-item has-badge ${
-              currentTab === 'all-inboxes' || tags.some((t) => t.id === currentTab)
-                ? 'parent-active'
-                : ''
-            }`}
+            className={`menu-item has-badge ${currentTab === 'all-inboxes' || tags.some((t) => t.id === currentTab)
+              ? 'parent-active'
+              : ''
+              }`}
             onClick={onToggleInbox}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
@@ -90,18 +89,6 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
             {!isCollapsed && (
               <>
                 <span className="item-label inbox-label">All Tags</span>
-                <button
-                  type="button"
-                  className="btn-add-tag-quick"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onStartAddTag();
-                  }}
-                  title="Add new tag"
-                  aria-label="Add new tag"
-                >
-                  <Plus size={14} />
-                </button>
               </>
             )}
           </div>

@@ -38,6 +38,10 @@ export const INITIAL_NOTES: NoteItem[] = [
     tagType: 'personal',
     date: '20.12.2020',
     attachmentCount: 2,
+    attachments: [
+      { name: 'Photo_Shooting_Plan.pdf', size: '2.4 MB', type: 'application/pdf' },
+      { name: 'Instagram_Moodboard.png', size: '4.8 MB', type: 'image/png' }
+    ],
     title: 'Shooting with Nastya',
     content: "I need to meet with Nastya Gromko near the metro station Golder Gate. After this we'll go to Paul coffe shop and doing some photos for me instagram content.",
     avatars: [
@@ -62,6 +66,11 @@ export const INITIAL_NOTES: NoteItem[] = [
     tagType: 'projects',
     date: '18.12.2020',
     attachmentCount: 3,
+    attachments: [
+      { name: 'Q4_Financial_Report.xlsx', size: '1.8 MB', type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
+      { name: 'Roadmap_Presentation.pdf', size: '5.2 MB', type: 'application/pdf' },
+      { name: 'Budget_Overview.docx', size: '820 KB', type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }
+    ],
     title: 'Q4 Budget & Strategy Review',
     content: 'Review quarterly revenue targets, product roadmap expenses, and staffing requirements with department heads.',
     avatars: [
@@ -82,6 +91,10 @@ export const INITIAL_NOTES: NoteItem[] = [
     tagType: 'projects',
     date: '15.12.2020',
     attachmentCount: 2,
+    attachments: [
+      { name: 'Taxi_App_Concept_v1.pdf', size: '3.6 MB', type: 'application/pdf' },
+      { name: 'User_Flow_Diagram.png', size: '2.1 MB', type: 'image/png' }
+    ],
     title: 'Create concept for Taxi app',
     content: 'I got a new progect, application for Taxi. For first I need to do a research and concept for this project. For start i need to write a little technical task for better understanding this application.',
     avatars: [
@@ -103,6 +116,10 @@ export const INITIAL_NOTES: NoteItem[] = [
     tagType: 'personal',
     date: '10.12.2020',
     attachmentCount: 2,
+    attachments: [
+      { name: 'Meeting_Agenda.docx', size: '450 KB', type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
+      { name: 'Design_Proposal.pdf', size: '1.9 MB', type: 'application/pdf' }
+    ],
     title: 'Meeting with Josh',
     content: 'To discuss project details and milestones for next quarter. Coordinate with design team and prepare presentations.',
     avatars: [

@@ -110,7 +110,6 @@ export function Home() {
           activeTab={activeCategory}
           onSelectTab={handleSelectCategoryTab}
           tabs={categoryTabs}
-          onAddTag={handleAddTag}
         />
 
         {/* Notes Grid or Empty State */}

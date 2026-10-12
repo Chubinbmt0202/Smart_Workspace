@@ -131,37 +131,22 @@ export const NoteCard: React.FC<NoteCardProps> = ({
       </div>
 
       {/* Title */}
-      <h3 className="card-title">{note.title}</h3>
+      <h3 className="card-title" title={note.title}>
+        {note.title}
+      </h3>
 
       {/* Content snippet */}
-      <p className="card-content">{note.content}</p>
+      <p className="card-content" title={note.content}>
+        {note.content}
+      </p>
 
-      {/* Bottom Footer Row: Avatars & Reminder */}
+      {/* Bottom Footer Row: Reminder */}
       <div className="card-footer">
-        {/* Avatars Stack */}
-        <div className="avatar-stack">
-          {note.avatars &&
-            note.avatars.map((av, index) => (
-              <img
-                key={index}
-                src={av.avatarUrl}
-                alt={av.name}
-                className="avatar-item"
-              />
-            ))}
-          {note.moreAvatarsCount && note.moreAvatarsCount > 0 ? (
-            <div className="avatar-item avatar-badge">
-              +{note.moreAvatarsCount}
-            </div>
-          ) : null}
-        </div>
-
         {/* Reminder Time Tag */}
         {note.reminder && (
           <div
-            className={`reminder-badge ${
-              note.reminder.isUrgent ? 'urgent' : ''
-            }`}
+            className={`reminder-badge ${note.reminder.isUrgent ? 'urgent' : ''
+              }`}
           >
             <Clock size={13} className="reminder-icon" />
             <span className="reminder-time">{note.reminder.time}</span>

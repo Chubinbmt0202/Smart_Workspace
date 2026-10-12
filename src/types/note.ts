@@ -4,6 +4,11 @@ export interface NoteItem {
   tagType: 'personal' | 'projects' | 'custom';
   date: string;
   attachmentCount?: number;
+  attachments?: {
+    name: string;
+    size?: string;
+    type?: string;
+  }[];
   title: string;
   content: string;
   avatars?: {

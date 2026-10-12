@@ -111,52 +111,6 @@ export const SidebarTagTree: React.FC<SidebarTagTreeProps> = ({
         );
       })}
 
-      {/* Inline Form to Add New Tag */}
-      {isAddingTag ? (
-        <div className="add-tag-inline-form">
-          <span
-            className="colored-dot"
-            style={{ backgroundColor: '#10b981' }}
-          />
-          <input
-            type="text"
-            className="add-tag-input"
-            placeholder="New tag..."
-            value={newTagName}
-            onChange={(e) => onChangeNewTagName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') onConfirmAddTag();
-              if (e.key === 'Escape') onCancelAddTag();
-            }}
-            autoFocus
-          />
-          <button
-            type="button"
-            className="btn-tag-action confirm"
-            onClick={onConfirmAddTag}
-            title="Confirm"
-          >
-            <Check size={13} />
-          </button>
-          <button
-            type="button"
-            className="btn-tag-action cancel"
-            onClick={onCancelAddTag}
-            title="Cancel"
-          >
-            <X size={13} />
-          </button>
-        </div>
-      ) : (
-        <button
-          type="button"
-          className="btn-add-new-tag"
-          onClick={onStartAddTag}
-        >
-          <Plus size={14} className="add-tag-icon" />
-          <span>Add new tag</span>
-        </button>
-      )}
     </div>
   );
 };

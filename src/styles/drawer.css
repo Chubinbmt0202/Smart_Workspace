@@ -17,7 +17,7 @@
   top: 0;
   right: 0;
   bottom: 0;
-  width: 480px;
+  width: 680px;
   max-width: 95vw;
   background-color: #ffffff;
   z-index: 1050;
@@ -32,6 +32,7 @@
   from {
     transform: translateX(100%);
   }
+
   to {
     transform: translateX(0);
   }
@@ -360,4 +361,154 @@
 .btn-drawer-save:hover {
   transform: translateY(-1px);
   box-shadow: 0 6px 18px rgba(37, 99, 235, 0.38);
+}
+
+/* Attachments Section */
+.drawer-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.btn-drawer-add-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: 1px dashed #cbd5e1;
+  color: #3e7bfa;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.btn-drawer-add-file:hover {
+  background-color: #eff6ff;
+  border-color: #3e7bfa;
+}
+
+.drawer-attachments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawer-attachment-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #f8fafc;
+  border: 1px solid #eef2f6;
+  border-radius: 12px;
+  padding: 10px 14px;
+  transition: all 0.2s ease;
+}
+
+.drawer-attachment-card:hover {
+  background-color: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+.attachment-card-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.attachment-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.attachment-icon.pdf {
+  color: #ef4444;
+}
+
+.attachment-icon.image {
+  color: #3b82f6;
+}
+
+.attachment-icon.sheet {
+  color: #10b981;
+}
+
+.attachment-icon.file {
+  color: #64748b;
+}
+
+.attachment-card-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.attachment-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attachment-size {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 1px;
+}
+
+.attachment-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+.btn-attachment-action {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-attachment-action:hover {
+  background-color: #e2e8f0;
+  color: #0f172a;
+}
+
+.btn-attachment-action.delete:hover {
+  background-color: #fee2e2;
+  color: #ef4444;
+}
+
+.drawer-attachments-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px dashed #e2e8f0;
+  background-color: #f8fafc;
+  color: #94a3b8;
+  font-size: 12.5px;
 }
