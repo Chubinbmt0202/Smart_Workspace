@@ -41,12 +41,24 @@ export function useNotes() {
     });
   }, [notes, activeCategory, searchQuery]);
 
+  const [selectedNote, setSelectedNote] = useState<NoteItem | null>(null);
+
+  const handleUpdateNote = (updatedNote: NoteItem) => {
+    setNotes((prev) =>
+      prev.map((n) => (n.id === updatedNote.id ? updatedNote : n))
+    );
+    setSelectedNote(updatedNote);
+  };
+
   const handleAddNote = (newNote: NoteItem) => {
     setNotes((prev) => [newNote, ...prev]);
   };
 
   const handleDeleteNote = (id: string) => {
     setNotes((prev) => prev.filter((note) => note.id !== id));
+    if (selectedNote?.id === id) {
+      setSelectedNote(null);
+    }
   };
 
   const handleRenameTag = (tagId: string, newName: string) => {
@@ -82,6 +94,9 @@ export function useNotes() {
     setActiveCategory,
     searchQuery,
     setSearchQuery,
+    selectedNote,
+    setSelectedNote,
+    handleUpdateNote,
     handleAddNote,
     handleDeleteNote,
     handleRenameTag,

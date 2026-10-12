@@ -5,7 +5,8 @@ import {
   CategoryTabs,
   NoteCard,
   AddNoteModal,
-  EmptyState
+  EmptyState,
+  NoteDetailDrawer
 } from '../components';
 import { useNotes } from '../hooks/useNotes';
 import { INITIAL_NOTIFICATIONS, USER_PROFILE } from '../data/mockNotes';
@@ -23,6 +24,9 @@ export function Home() {
     setActiveCategory,
     searchQuery,
     setSearchQuery,
+    selectedNote,
+    setSelectedNote,
+    handleUpdateNote,
     handleAddNote,
     handleDeleteNote,
     handleRenameTag,
@@ -84,6 +88,7 @@ export function Home() {
               <NoteCard
                 key={note.id}
                 note={note}
+                onClick={setSelectedNote}
                 onDeleteNote={handleDeleteNote}
                 onAddTagClick={handleAddTagClick}
               />
@@ -105,6 +110,15 @@ export function Home() {
         onClose={() => setIsAddModalOpen(false)}
         onAddNote={handleAddNote}
         defaultCategory={activeCategory}
+      />
+
+      {/* Note Detail Drawer */}
+      <NoteDetailDrawer
+        isOpen={Boolean(selectedNote)}
+        note={selectedNote}
+        onClose={() => setSelectedNote(null)}
+        onUpdateNote={handleUpdateNote}
+        onDeleteNote={handleDeleteNote}
       />
     </div>
   );

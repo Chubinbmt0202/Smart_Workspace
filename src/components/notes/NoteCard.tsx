@@ -6,12 +6,14 @@ export interface NoteCardProps {
   note: NoteItem;
   onDeleteNote: (id: string) => void;
   onAddTagClick?: (note: NoteItem) => void;
+  onClick?: (note: NoteItem) => void;
 }
 
 export const NoteCard: React.FC<NoteCardProps> = ({
   note,
   onDeleteNote,
-  onAddTagClick
+  onAddTagClick,
+  onClick
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -36,14 +38,28 @@ export const NoteCard: React.FC<NoteCardProps> = ({
     return 'tag-custom';
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // If clicking inside menu dropdown or options button, ignore
+    if (menuRef.current && menuRef.current.contains(e.target as Node)) {
+      return;
+    }
+    onClick?.(note);
+  };
+
   return (
-    <article className="note-card" id={`note-${note.id}`}>
+    <article
+      className="note-card"
+      id={`note-${note.id}`}
+      onClick={handleCardClick}
+      style={{ cursor: onClick ? 'pointer' : 'default' }}
+    >
       {/* Top Row: Tag & More Options */}
       <div className="card-top-row">
         <span
           className={`card-tag ${getTagClass()}`}
-          onClick={() => {
+          onClick={(e) => {
             if (note.tagType === 'custom' && onAddTagClick) {
+              e.stopPropagation();
               onAddTagClick(note);
             }
           }}
@@ -55,7 +71,10 @@ export const NoteCard: React.FC<NoteCardProps> = ({
         <div style={{ position: 'relative' }} ref={menuRef}>
           <button
             className="card-options-btn"
-            onClick={() => setMenuOpen(!menuOpen)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setMenuOpen(!menuOpen);
+            }}
             aria-label="Note options"
           >
             <MoreVertical size={16} />
@@ -65,21 +84,29 @@ export const NoteCard: React.FC<NoteCardProps> = ({
             <div className="card-menu-dropdown">
               <button
                 className="card-menu-item"
-                onClick={() => setMenuOpen(false)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMenuOpen(false);
+                }}
               >
                 <Pin size={14} />
                 <span>Pin Note</span>
               </button>
               <button
                 className="card-menu-item"
-                onClick={() => setMenuOpen(false)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMenuOpen(false);
+                  onClick?.(note);
+                }}
               >
                 <Edit2 size={14} />
-                <span>Edit</span>
+                <span>View & Edit</span>
               </button>
               <button
                 className="card-menu-item delete"
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   setMenuOpen(false);
                   onDeleteNote(note.id);
                 }}
