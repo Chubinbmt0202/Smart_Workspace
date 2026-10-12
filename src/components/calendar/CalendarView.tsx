@@ -260,25 +260,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             {MONTH_NAMES[month]} {year}
           </h2>
         </div>
-
-        <div className="cal-header-right">
-          <button type="button" className="cal-dropdown-btn">
-            <span>Month</span>
-            <span style={{ fontSize: '10px' }}>▼</span>
-          </button>
-
-          {/* View switcher: Calendar vs Grid cards */}
-          <div className="cal-view-toggle">
-            <button
-              type="button"
-              className="cal-toggle-item active"
-              title="Calendar View"
-              aria-label="Calendar View"
-            >
-              <CalendarIcon size={16} />
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* 2. Weekday Header Row */}

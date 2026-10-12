@@ -118,58 +118,63 @@ export function Home() {
 
       {/* Main Content Area */}
       <main className="main-content">
-        {/* Header */}
-        <Header
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          notifications={notifications}
-          isNotificationsOpen={isNotificationsOpen}
-          onToggleNotifications={() => setIsNotificationsOpen((prev) => !prev)}
-          onCloseNotifications={() => setIsNotificationsOpen(false)}
-          userName={USER_PROFILE.name}
-          userAvatar={USER_PROFILE.avatarUrl}
-        />
-
-        {/* Category Tabs */}
-        <CategoryTabs
-          activeTab={activeCategory}
-          onSelectTab={handleSelectCategoryTab}
-          tabs={categoryTabs}
-          viewMode={viewMode}
-          onToggleViewMode={setViewMode}
-        />
-
-        {/* View Content: Calendar View vs Notes Grid */}
-        {viewMode === 'calendar' ? (
-          <CalendarView
-            notes={filteredNotes}
-            onSelectNote={setSelectedNote}
-            onOpenAddModalWithDate={handleOpenAddModalWithDate}
-            onSwitchToGrid={() => setViewMode('grid')}
-          />
-        ) : filteredNotes.length > 0 ? (
-          <div className="notes-grid">
-            {filteredNotes.map((note) => (
-              <NoteCard
-                key={note.id}
-                note={note}
-                onClick={setSelectedNote}
-                onDeleteNote={handleDeleteNote}
-                onAddTagClick={handleAddTagClick}
-              />
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            category={activeCategory}
+        {/* Fixed Top Section: Header & Category Tabs */}
+        <div className="main-top-section">
+          {/* Header */}
+          <Header
             searchQuery={searchQuery}
-            onOpenAddModal={() => {
-              setModalInitialDate(undefined);
-              setIsAddModalOpen(true);
-            }}
-            onClearSearch={() => setSearchQuery('')}
+            onSearchChange={setSearchQuery}
+            notifications={notifications}
+            isNotificationsOpen={isNotificationsOpen}
+            onToggleNotifications={() => setIsNotificationsOpen((prev) => !prev)}
+            onCloseNotifications={() => setIsNotificationsOpen(false)}
+            userName={USER_PROFILE.name}
+            userAvatar={USER_PROFILE.avatarUrl}
           />
-        )}
+
+          {/* Category Tabs */}
+          <CategoryTabs
+            activeTab={activeCategory}
+            onSelectTab={handleSelectCategoryTab}
+            tabs={categoryTabs}
+            viewMode={viewMode}
+            onToggleViewMode={setViewMode}
+          />
+        </div>
+
+        {/* Scrollable Content Body: Notes Grid / Calendar */}
+        <div className="main-scroll-body">
+          {viewMode === 'calendar' ? (
+            <CalendarView
+              notes={filteredNotes}
+              onSelectNote={setSelectedNote}
+              onOpenAddModalWithDate={handleOpenAddModalWithDate}
+              onSwitchToGrid={() => setViewMode('grid')}
+            />
+          ) : filteredNotes.length > 0 ? (
+            <div className="notes-grid">
+              {filteredNotes.map((note) => (
+                <NoteCard
+                  key={note.id}
+                  note={note}
+                  onClick={setSelectedNote}
+                  onDeleteNote={handleDeleteNote}
+                  onAddTagClick={handleAddTagClick}
+                />
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              category={activeCategory}
+              searchQuery={searchQuery}
+              onOpenAddModal={() => {
+                setModalInitialDate(undefined);
+                setIsAddModalOpen(true);
+              }}
+              onClearSearch={() => setSearchQuery('')}
+            />
+          )}
+        </div>
       </main>
 
       {/* Add Note Modal */}

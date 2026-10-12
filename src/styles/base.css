@@ -13,10 +13,11 @@ body {
   color: var(--color-text-dark);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 #root {
   height: 100%;
   width: 100%;
+  overflow: hidden;
 }

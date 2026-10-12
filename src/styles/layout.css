@@ -2,7 +2,8 @@
 .app-frame {
   display: flex;
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
+  max-height: 100vh;
   background-color: #ffffff;
   position: relative;
   overflow: hidden;
@@ -17,14 +18,60 @@
   display: none;
 }
 
-/* Main Content Wrapper */
+/* Main Content Wrapper (Fixed 100vh) */
 .main-content {
   flex: 1;
+  height: 100vh;
+  max-height: 100vh;
   background-color: var(--bg-main);
   display: flex;
   flex-direction: column;
-  padding: 28px 40px 40px 40px;
+  padding: 24px 36px 0 36px;
   position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Fixed Top Section: Header & Category Tabs */
+.main-top-section {
+  flex-shrink: 0;
+  background-color: var(--bg-main);
+  position: sticky;
+  top: 0;
+  z-index: 25;
+}
+
+/* Scrollable Content Body: Notes Grid & Calendar */
+.main-scroll-body {
+  flex: 1;
   overflow-y: auto;
-  min-height: 100vh;
+  overflow-x: hidden;
+  padding-bottom: 32px;
+  padding-right: 6px;
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.main-scroll-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.main-scroll-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.main-scroll-body::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.main-scroll-body::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: 16px 16px 0 16px;
+  }
 }
