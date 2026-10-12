@@ -31,6 +31,8 @@ export function Home() {
       setActiveCategory('Personal');
     } else if (tab === 'all-inboxes') {
       setActiveCategory('All');
+    } else {
+      setActiveCategory(tab);
     }
   };
 
@@ -46,6 +48,12 @@ export function Home() {
           return false;
         }
         if (activeCategory === 'Business' && note.tag !== 'Business') {
+          return false;
+        }
+        if (
+          !['Personal', 'Projects', 'Business'].includes(activeCategory) &&
+          note.tag.toLowerCase() !== activeCategory.toLowerCase()
+        ) {
           return false;
         }
       }

@@ -416,6 +416,157 @@ body {
   box-shadow: 0 3px 8px rgba(37, 99, 235, 0.32);
 }
 
+/* Delete tag button inside sub-menu-item */
+.btn-del-tag {
+  margin-left: auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: flex;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  padding: 0;
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.9);
+}
+
+/* Appear when hovering over the parent item */
+.sub-menu-item:hover .btn-del-tag {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+}
+
+.btn-del-tag:hover {
+  background-color: #fee2e2;
+  color: #ef4444;
+  transform: scale(1.1);
+}
+
+.btn-add-tag-quick {
+  margin-left: auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.btn-add-tag-quick:hover {
+  background-color: #e2e8f0;
+  color: #1e293b;
+  transform: scale(1.08);
+}
+
+/* Add new tag button inside tree */
+.btn-add-new-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px dashed #cbd5e1;
+  background: transparent;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 5px;
+  transition: all 0.18s ease;
+  font-family: inherit;
+}
+
+.btn-add-new-tag:hover {
+  background-color: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.btn-add-new-tag .add-tag-icon {
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+/* Inline form to enter tag name */
+.add-tag-inline-form {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  margin-top: 5px;
+  width: 100%;
+  box-sizing: border-box;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.add-tag-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: #0f172a;
+  font-family: inherit;
+  padding: 2px 0;
+}
+
+.add-tag-input::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.btn-tag-action {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.btn-tag-action.confirm {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+
+.btn-tag-action.confirm:hover {
+  background-color: #1d4ed8;
+}
+
+.btn-tag-action.cancel {
+  background-color: transparent;
+  color: #94a3b8;
+}
+
+.btn-tag-action.cancel:hover {
+  background-color: #f1f5f9;
+  color: #475569;
+}
+
 /* Main Content Wrapper */
 .main-content {
   flex: 1;

@@ -4,14 +4,14 @@ import {
   SquarePen,
   ChevronLeft,
   ChevronRight,
-  User,
   Inbox,
-  Send,
   Clock,
-  Settings,
-  Bell,
   Trash2,
-  Home
+  Home,
+  Plus,
+  Check,
+  X,
+  Trash
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -21,6 +21,8 @@ interface SidebarProps {
   onToggleNotifications?: () => void;
   searchQuery?: string;
   onSearchChange?: (query: string) => void;
+  onAddTag?: (tag: { id: string; label: string; dotColor: string }) => void;
+  onDeleteTag?: (tagId: string) => void;
 }
 
 interface SubMenuItem {
@@ -33,7 +35,7 @@ interface SubMenuItem {
 const INBOX_SUBITEMS: SubMenuItem[] = [
   { id: 'primary', label: 'Primary', dotColor: '#3b82f6' },
   { id: 'business', label: 'Business', dotColor: '#ef4444' },
-  { id: 'projects', label: 'Projects', dotColor: '#f59e0b', badge: '20+' },
+  { id: 'projects', label: 'Projects', dotColor: '#f59e0b' },
   { id: 'game', label: 'Game', dotColor: '#8b5cf6' }
 ];
 
@@ -43,11 +45,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenAddModal,
   onToggleNotifications,
   searchQuery = '',
-  onSearchChange
+  onSearchChange,
+  onAddTag,
+  onDeleteTag
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [inboxExpanded, setInboxExpanded] = useState(true);
   const [localSearch, setLocalSearch] = useState(searchQuery);
+  const [tags, setTags] = useState<SubMenuItem[]>(INBOX_SUBITEMS);
+  const [isAddingTag, setIsAddingTag] = useState(false);
+  const [newTagName, setNewTagName] = useState('');
+  const [hoveredDeleteTagId, setHoveredDeleteTagId] = useState<string | null>(null);
+
+  const handleDeleteTag = (e: React.MouseEvent, tagId: string) => {
+    e.stopPropagation();
+    setTags((prev) => prev.filter((t) => t.id !== tagId));
+    onDeleteTag?.(tagId);
+    if (currentTab === tagId) {
+      handleTabClick('all-inboxes');
+    }
+  };
 
   const handleTabClick = (tabId: string) => {
     if (tabId === 'notifications' && onToggleNotifications) {
@@ -60,6 +77,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const val = e.target.value;
     setLocalSearch(val);
     onSearchChange?.(val);
+  };
+
+  const handleCreateTag = () => {
+    const trimmed = newTagName.trim();
+    if (!trimmed) {
+      setIsAddingTag(false);
+      return;
+    }
+
+    const colorPalette = ['#10b981', '#06b6d4', '#ec4899', '#8b5cf6', '#f97316', '#14b8a6', '#6366f1'];
+    const randomColor = colorPalette[tags.length % colorPalette.length];
+    const newTagId = trimmed.toLowerCase().replace(/\s+/g, '-');
+
+    const newTag: SubMenuItem = {
+      id: newTagId,
+      label: trimmed,
+      dotColor: randomColor
+    };
+
+    setTags((prev) => [...prev, newTag]);
+    setNewTagName('');
+    setIsAddingTag(false);
+    onAddTag?.(newTag);
+    handleTabClick(newTagId);
   };
 
   return (
@@ -151,12 +192,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {!isCollapsed && <span className="item-label">Home</span>}
           </button>
 
-          {/* All Inboxes */}
+          {/* All Inboxes / All Tags */}
           <div className="inbox-parent-container">
             <button
               type="button"
               className={`menu-item has-badge ${currentTab === 'all-inboxes' ||
-                ['primary', 'business', 'projects', 'game'].includes(currentTab)
+                tags.some((t) => t.id === currentTab)
                 ? 'parent-active'
                 : ''
                 }`}
@@ -164,12 +205,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 setInboxExpanded(!inboxExpanded);
                 handleTabClick('all-inboxes');
               }}
-              title="All Inboxes"
+              title="All Tags"
             >
               <Inbox size={18} className="item-icon inbox-icon" />
               {!isCollapsed && (
                 <>
                   <span className="item-label inbox-label">All Tags</span>
+                  <button
+                    type="button"
+                    className="btn-add-tag-quick"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setInboxExpanded(true);
+                      setIsAddingTag(true);
+                    }}
+                    title="Add new tag"
+                    aria-label="Add new tag"
+                  >
+                    <Plus size={14} />
+                  </button>
                 </>
               )}
             </button>
@@ -177,14 +231,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {/* Nested Sub-items */}
             {!isCollapsed && inboxExpanded && (
               <div className="sub-menu-tree">
-                {INBOX_SUBITEMS.map((sub) => {
+                {tags.map((sub) => {
                   const isSubActive = currentTab === sub.id;
                   return (
-                    <button
+                    <div
                       key={sub.id}
-                      type="button"
+                      role="button"
+                      tabIndex={0}
                       className={`sub-menu-item ${isSubActive ? 'sub-active' : ''}`}
                       onClick={() => handleTabClick(sub.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          handleTabClick(sub.id);
+                        }
+                      }}
                     >
                       {/* Active indicator bar on tree line */}
                       {isSubActive && <span className="active-indicator-bar" />}
@@ -196,9 +256,78 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       {sub.badge && (
                         <span className="badge-pill sub-badge">{sub.badge}</span>
                       )}
-                    </button>
+                      <button
+                        type="button"
+                        className="btn-del-tag"
+                        title="Delete tag"
+                        aria-label="Delete tag"
+                        onClick={(e) => handleDeleteTag(e, sub.id)}
+                        onMouseEnter={() => setHoveredDeleteTagId(sub.id)}
+                        onMouseLeave={() => setHoveredDeleteTagId(null)}
+                      >
+                        {hoveredDeleteTagId === sub.id ? (
+                          <Trash2 size={14} />
+                        ) : (
+                          <Trash size={14} />
+                        )}
+                      </button>
+                    </div>
+
                   );
                 })}
+
+                {/* Add new tag button / inline form */}
+                {isAddingTag ? (
+                  <div className="add-tag-inline-form">
+                    <span
+                      className="colored-dot"
+                      style={{ backgroundColor: '#10b981' }}
+                    />
+                    <input
+                      type="text"
+                      className="add-tag-input"
+                      placeholder="New tag..."
+                      value={newTagName}
+                      onChange={(e) => setNewTagName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleCreateTag();
+                        if (e.key === 'Escape') {
+                          setIsAddingTag(false);
+                          setNewTagName('');
+                        }
+                      }}
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      className="btn-tag-action confirm"
+                      onClick={handleCreateTag}
+                      title="Confirm"
+                    >
+                      <Check size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-tag-action cancel"
+                      onClick={() => {
+                        setIsAddingTag(false);
+                        setNewTagName('');
+                      }}
+                      title="Cancel"
+                    >
+                      <X size={13} />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn-add-new-tag"
+                    onClick={() => setIsAddingTag(true)}
+                  >
+                    <Plus size={14} className="add-tag-icon" />
+                    <span>Add new tag</span>
+                  </button>
+                )}
               </div>
             )}
           </div>
