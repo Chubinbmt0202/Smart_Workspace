@@ -6,8 +6,6 @@ import {
   Paperclip,
   Calendar,
   Search,
-  AlertTriangle,
-  FileText
 } from 'lucide-react';
 import type { NoteItem } from '../../types/note';
 
@@ -79,7 +77,6 @@ export const RecycleBinView: React.FC<RecycleBinViewProps> = ({
   deletedNotes,
   onRestoreNote,
   onPermanentDeleteNote,
-  onEmptyRecycleBin,
   onSelectNote
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -95,16 +92,6 @@ export const RecycleBinView: React.FC<RecycleBinViewProps> = ({
     );
   }, [deletedNotes, searchQuery]);
 
-  const handleConfirmEmpty = () => {
-    if (deletedNotes.length === 0) return;
-    if (
-      window.confirm(
-        'Bạn có chắc chắn muốn dọn sạch toàn bộ thùng rác? Các ghi chú này sẽ bị xóa vĩnh viễn và không thể khôi phục.'
-      )
-    ) {
-      onEmptyRecycleBin();
-    }
-  };
 
   const handleConfirmPermanentDelete = (id: string, title: string) => {
     if (
