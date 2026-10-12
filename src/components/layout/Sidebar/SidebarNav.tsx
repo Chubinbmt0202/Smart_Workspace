@@ -70,14 +70,20 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
 
         {/* All Tags Container */}
         <div className="inbox-parent-container">
-          <button
-            type="button"
+          <div
+            role="button"
+            tabIndex={0}
             className={`menu-item has-badge ${
               currentTab === 'all-inboxes' || tags.some((t) => t.id === currentTab)
                 ? 'parent-active'
                 : ''
             }`}
             onClick={onToggleInbox}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                onToggleInbox();
+              }
+            }}
             title="All Tags"
           >
             <Inbox size={18} className="item-icon inbox-icon" />
@@ -98,7 +104,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
                 </button>
               </>
             )}
-          </button>
+          </div>
 
           {/* Nested Sub-items */}
           {!isCollapsed && inboxExpanded && (

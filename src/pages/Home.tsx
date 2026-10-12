@@ -4,7 +4,8 @@ import {
   Header,
   CategoryTabs,
   NoteCard,
-  AddNoteModal
+  AddNoteModal,
+  EmptyState
 } from '../components';
 import { useNotes } from '../hooks/useNotes';
 import { INITIAL_NOTIFICATIONS, USER_PROFILE } from '../data/mockNotes';
@@ -76,17 +77,26 @@ export function Home() {
           onSelectTab={setActiveCategory}
         />
 
-        {/* Notes Grid */}
-        <div className="notes-grid">
-          {filteredNotes.map((note) => (
-            <NoteCard
-              key={note.id}
-              note={note}
-              onDeleteNote={handleDeleteNote}
-              onAddTagClick={handleAddTagClick}
-            />
-          ))}
-        </div>
+        {/* Notes Grid or Empty State */}
+        {filteredNotes.length > 0 ? (
+          <div className="notes-grid">
+            {filteredNotes.map((note) => (
+              <NoteCard
+                key={note.id}
+                note={note}
+                onDeleteNote={handleDeleteNote}
+                onAddTagClick={handleAddTagClick}
+              />
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            category={activeCategory}
+            searchQuery={searchQuery}
+            onOpenAddModal={() => setIsAddModalOpen(true)}
+            onClearSearch={() => setSearchQuery('')}
+          />
+        )}
       </main>
 
       {/* Add Note Modal */}
@@ -94,6 +104,7 @@ export function Home() {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAddNote={handleAddNote}
+        defaultCategory={activeCategory}
       />
     </div>
   );

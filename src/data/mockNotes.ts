@@ -57,6 +57,26 @@ export const INITIAL_NOTES: NoteItem[] = [
     }
   },
   {
+    id: 'note-biz-1',
+    tag: 'Business',
+    tagType: 'projects',
+    date: '18.12.2020',
+    attachmentCount: 3,
+    title: 'Q4 Budget & Strategy Review',
+    content: 'Review quarterly revenue targets, product roadmap expenses, and staffing requirements with department heads.',
+    avatars: [
+      {
+        name: 'Josh',
+        avatarUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80'
+      }
+    ],
+    reminder: {
+      time: '14.00',
+      day: 'Thursday',
+      isUrgent: false
+    }
+  },
+  {
     id: 'note-2',
     tag: 'Projects',
     tagType: 'projects',

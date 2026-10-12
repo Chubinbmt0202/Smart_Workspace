@@ -30,6 +30,16 @@
   color: var(--color-text-dark);
 }
 
+.tab-btn:focus {
+  outline: none;
+}
+
+.tab-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(62, 123, 250, 0.25);
+  border-radius: 4px;
+}
+
 .tab-btn.active {
   color: var(--color-primary-blue);
   font-weight: 600;
@@ -319,3 +329,102 @@
   background-color: #fff1f2;
   color: var(--color-urgent-red);
 }
+
+/* ==========================================================
+   EMPTY STATE VIEW (When tag/category has no notes)
+   ========================================================== */
+.empty-state-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 24px;
+  background-color: #ffffff;
+  border-radius: 24px;
+  border: 1px dashed #e2e8f0;
+  box-shadow: 0 4px 20px rgba(27, 40, 86, 0.02);
+  margin-top: 10px;
+  animation: fadeIn 0.3s ease;
+  min-height: 380px;
+}
+
+.empty-state-icon-wrapper {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.12);
+}
+
+.empty-state-icon {
+  color: #2563eb;
+}
+
+.empty-state-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 8px;
+  max-width: 480px;
+}
+
+.empty-state-description {
+  font-size: 13.5px;
+  color: #64748b;
+  max-width: 420px;
+  line-height: 1.6;
+  margin-bottom: 26px;
+}
+
+.empty-state-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-empty-create {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 22px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.btn-empty-create:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+}
+
+.btn-empty-clear {
+  background: none;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  border-radius: 12px;
+  padding: 10px 18px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.btn-empty-clear:hover {
+  background-color: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+

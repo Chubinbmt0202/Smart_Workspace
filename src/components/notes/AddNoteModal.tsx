@@ -6,19 +6,33 @@ export interface AddNoteModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAddNote: (newNote: NoteItem) => void;
+  defaultCategory?: string;
 }
 
 export const AddNoteModal: React.FC<AddNoteModalProps> = ({
   isOpen,
   onClose,
-  onAddNote
+  onAddNote,
+  defaultCategory = 'Personal'
 }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [category, setCategory] = useState<'Personal' | 'Projects' | 'Business'>('Personal');
+  const initialCat = ['Personal', 'Projects', 'Business'].includes(defaultCategory)
+    ? (defaultCategory as 'Personal' | 'Projects' | 'Business')
+    : 'Personal';
+  const [category, setCategory] = useState<'Personal' | 'Projects' | 'Business'>(initialCat);
   const [attachments, setAttachments] = useState('2');
   const [reminderDay, setReminderDay] = useState('Today');
   const [isUrgent, setIsUrgent] = useState(false);
+
+  // Sync category when modal opens
+  React.useEffect(() => {
+    if (isOpen) {
+      if (['Personal', 'Projects', 'Business'].includes(defaultCategory)) {
+        setCategory(defaultCategory as 'Personal' | 'Projects' | 'Business');
+      }
+    }
+  }, [isOpen, defaultCategory]);
 
   if (!isOpen) return null;
 
