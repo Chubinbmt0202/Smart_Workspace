@@ -1,11 +1,12 @@
 import { useState, useMemo, useCallback } from 'react';
 import type { NoteItem } from '../types/note';
 import type { TagItem } from '../types/tag';
-import { INITIAL_NOTES } from '../data/mockNotes';
+import { INITIAL_NOTES, INITIAL_DELETED_NOTES } from '../data/mockNotes';
 import { INITIAL_TAGS, TAG_COLOR_PALETTE } from '../constants/tags';
 
 export function useNotes() {
   const [notes, setNotes] = useState<NoteItem[]>(INITIAL_NOTES);
+  const [deletedNotes, setDeletedNotes] = useState<NoteItem[]>(INITIAL_DELETED_NOTES);
   const [tags, setTags] = useState<TagItem[]>(INITIAL_TAGS);
   const [activeCategory, setActiveCategory] = useState<string>('Projects');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -125,8 +126,38 @@ export function useNotes() {
   }, [ensureTagExists]);
 
   const handleDeleteNote = useCallback((id: string) => {
-    setNotes((prev) => prev.filter((note) => note.id !== id));
+    setNotes((prevNotes) => {
+      const targetNote = prevNotes.find((n) => n.id === id);
+      if (targetNote) {
+        const deletedNote: NoteItem = {
+          ...targetNote,
+          deletedAt: new Date().toISOString()
+        };
+        setDeletedNotes((prevDel) => [deletedNote, ...prevDel]);
+      }
+      return prevNotes.filter((note) => note.id !== id);
+    });
     setSelectedNote((prevSelected) => (prevSelected?.id === id ? null : prevSelected));
+  }, []);
+
+  const handleRestoreNote = useCallback((id: string) => {
+    setDeletedNotes((prevDel) => {
+      const target = prevDel.find((n) => n.id === id);
+      if (target) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { deletedAt: _, ...restoredNote } = target;
+        setNotes((prevNotes) => [restoredNote, ...prevNotes]);
+      }
+      return prevDel.filter((n) => n.id !== id);
+    });
+  }, []);
+
+  const handlePermanentDeleteNote = useCallback((id: string) => {
+    setDeletedNotes((prevDel) => prevDel.filter((n) => n.id !== id));
+  }, []);
+
+  const handleEmptyRecycleBin = useCallback(() => {
+    setDeletedNotes([]);
   }, []);
 
   const handleAddTag = useCallback((newTagOrName: TagItem | string) => {
@@ -204,6 +235,7 @@ export function useNotes() {
 
   return {
     notes,
+    deletedNotes,
     tags,
     categoryTabs,
     filteredNotes,
@@ -216,6 +248,9 @@ export function useNotes() {
     handleUpdateNote,
     handleAddNote,
     handleDeleteNote,
+    handleRestoreNote,
+    handlePermanentDeleteNote,
+    handleEmptyRecycleBin,
     handleAddTag,
     handleDeleteTag,
     handleRenameTag,

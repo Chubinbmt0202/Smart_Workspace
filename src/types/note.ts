@@ -22,6 +22,7 @@ export interface NoteItem {
     day: string;
     isUrgent?: boolean;
   };
+  deletedAt?: string;
 }
 
 export interface NotificationItem {

@@ -7,7 +7,8 @@ import {
   AddNoteModal,
   EmptyState,
   NoteDetailDrawer,
-  CalendarView
+  CalendarView,
+  RecycleBinView
 } from '../components';
 import { useNotes } from '../hooks/useNotes';
 import { INITIAL_NOTIFICATIONS, USER_PROFILE } from '../data/mockNotes';
@@ -27,6 +28,7 @@ export function Home() {
     tags,
     categoryTabs,
     filteredNotes,
+    deletedNotes,
     activeCategory,
     setActiveCategory,
     searchQuery,
@@ -36,6 +38,9 @@ export function Home() {
     handleUpdateNote,
     handleAddNote,
     handleDeleteNote,
+    handleRestoreNote,
+    handlePermanentDeleteNote,
+    handleEmptyRecycleBin,
     handleAddTag,
     handleDeleteTag,
     handleRenameTag,
@@ -44,6 +49,10 @@ export function Home() {
 
   const handleSelectSidebarTab = (tab: string) => {
     setSidebarTab(tab);
+
+    if (tab === 'recycle') {
+      return;
+    }
 
     if (tab === 'calendar' || tab === 'scheduled') {
       setViewMode('calendar');
@@ -114,6 +123,7 @@ export function Home() {
         onAddTag={handleAddTag}
         onDeleteTag={handleDeleteTag}
         renameTag={handleRenameTag}
+        deletedCount={deletedNotes.length}
       />
 
       {/* Main Content Area */}
@@ -132,19 +142,29 @@ export function Home() {
             userAvatar={USER_PROFILE.avatarUrl}
           />
 
-          {/* Category Tabs */}
-          <CategoryTabs
-            activeTab={activeCategory}
-            onSelectTab={handleSelectCategoryTab}
-            tabs={categoryTabs}
-            viewMode={viewMode}
-            onToggleViewMode={setViewMode}
-          />
+          {/* Category Tabs (shown when not in recycle bin) */}
+          {sidebarTab !== 'recycle' && (
+            <CategoryTabs
+              activeTab={activeCategory}
+              onSelectTab={handleSelectCategoryTab}
+              tabs={categoryTabs}
+              viewMode={viewMode}
+              onToggleViewMode={setViewMode}
+            />
+          )}
         </div>
 
-        {/* Scrollable Content Body: Notes Grid / Calendar */}
+        {/* Scrollable Content Body: Notes Grid / Calendar / Recycle Bin */}
         <div className="main-scroll-body">
-          {viewMode === 'calendar' ? (
+          {sidebarTab === 'recycle' ? (
+            <RecycleBinView
+              deletedNotes={deletedNotes}
+              onRestoreNote={handleRestoreNote}
+              onPermanentDeleteNote={handlePermanentDeleteNote}
+              onEmptyRecycleBin={handleEmptyRecycleBin}
+              onSelectNote={setSelectedNote}
+            />
+          ) : viewMode === 'calendar' ? (
             <CalendarView
               notes={filteredNotes}
               onSelectNote={setSelectedNote}

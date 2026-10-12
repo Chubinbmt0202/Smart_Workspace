@@ -190,3 +190,43 @@ export const INITIAL_NOTES: NoteItem[] = [
     }
   }
 ];
+
+export const INITIAL_DELETED_NOTES: NoteItem[] = [
+  {
+    id: 'del-note-1',
+    tag: 'Projects',
+    tagType: 'projects',
+    date: '02.10.2026',
+    attachmentCount: 1,
+    attachments: [
+      { name: 'UI_Kit_Comparison.pdf', size: '3.1 MB', type: 'application/pdf' }
+    ],
+    title: 'Research UI Kits & Design Trends',
+    content: 'Review competitor UI kits on Figma community and compile a list of modern glassmorphism patterns and typography styles.',
+    deletedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() // 3 days ago
+  },
+  {
+    id: 'del-note-2',
+    tag: 'Personal',
+    tagType: 'personal',
+    date: '28.09.2026',
+    title: 'Weekend Groceries & Meal Prep',
+    content: 'Buy salmon, avocado, sourdough bread, oat milk and fresh fruits for next week healthy diet schedule.',
+    deletedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days ago
+  },
+  {
+    id: 'del-note-3',
+    tag: 'Business',
+    tagType: 'projects',
+    date: '05.10.2026',
+    attachmentCount: 2,
+    attachments: [
+      { name: 'Contract_Draft_v1.docx', size: '120 KB', type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
+      { name: 'Financial_Appendix.pdf', size: '940 KB', type: 'application/pdf' }
+    ],
+    title: 'Old Client Contract Draft v1',
+    content: 'Initial agreement draft before adding NDA clauses and revised payment terms in section 4.2.',
+    deletedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString() // 14 days ago
+  }
+];
+

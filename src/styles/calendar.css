@@ -308,8 +308,12 @@
   flex-direction: column;
   gap: 4px;
   overflow-y: auto;
+  overflow-x: hidden;
   flex: 1;
   max-height: 120px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .cal-events-container::-webkit-scrollbar {
@@ -333,6 +337,9 @@
   cursor: pointer;
   transition: all 0.15s ease;
   line-height: 1.4;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .cal-note-chip:hover {
@@ -382,6 +389,7 @@
 
 .cal-chip-title {
   flex: 1;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

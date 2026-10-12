@@ -26,11 +26,13 @@ interface SidebarNavProps {
   onDeleteTag: (e: React.MouseEvent, tagId: string) => void;
   onMouseEnterDelete: (tagId: string) => void;
   onMouseLeaveDelete: () => void;
+  deletedCount?: number;
 }
 
 export const SidebarNav: React.FC<SidebarNavProps> = ({
   isCollapsed,
   currentTab,
+  deletedCount,
   inboxExpanded,
   tags,
   isAddingTag,
@@ -139,6 +141,9 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
         >
           <Trash2 size={18} className="item-icon" />
           {!isCollapsed && <span className="item-label">Recycle bin</span>}
+          {!isCollapsed && deletedCount !== undefined && deletedCount > 0 && (
+            <span className="sidebar-recycle-badge">{deletedCount}</span>
+          )}
         </button>
       </div>
     </div>

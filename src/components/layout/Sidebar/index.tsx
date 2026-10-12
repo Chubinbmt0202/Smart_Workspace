@@ -16,6 +16,7 @@ export interface SidebarProps {
   onAddTag?: (tag: TagItem) => void;
   onDeleteTag?: (tagId: string) => void;
   renameTag?: (tagId: string, newName: string) => void;
+  deletedCount?: number;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -28,7 +29,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   tags: propTags,
   onAddTag,
   onDeleteTag,
-  renameTag
+  renameTag,
+  deletedCount
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [inboxExpanded, setInboxExpanded] = useState(true);
@@ -94,6 +96,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <SidebarNav
         isCollapsed={isCollapsed}
         currentTab={currentTab}
+        deletedCount={deletedCount}
         inboxExpanded={inboxExpanded}
         tags={tags}
         isAddingTag={isAddingTag}
