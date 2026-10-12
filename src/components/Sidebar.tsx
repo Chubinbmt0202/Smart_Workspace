@@ -11,7 +11,8 @@ import {
   Plus,
   Check,
   X,
-  Trash
+  Trash,
+  Pencil
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -23,6 +24,7 @@ interface SidebarProps {
   onSearchChange?: (query: string) => void;
   onAddTag?: (tag: { id: string; label: string; dotColor: string }) => void;
   onDeleteTag?: (tagId: string) => void;
+  renameTag?: (tagId: string, newName: string) => void;
 }
 
 interface SubMenuItem {
@@ -47,7 +49,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   searchQuery = '',
   onSearchChange,
   onAddTag,
-  onDeleteTag
+  onDeleteTag,
+  renameTag
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [inboxExpanded, setInboxExpanded] = useState(true);
@@ -56,6 +59,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [isAddingTag, setIsAddingTag] = useState(false);
   const [newTagName, setNewTagName] = useState('');
   const [hoveredDeleteTagId, setHoveredDeleteTagId] = useState<string | null>(null);
+  const [editingTagId, setEditingTagId] = useState<string | null>(null);
+  const [editingTagName, setEditingTagName] = useState('');
+
+  const handleStartRename = (e: React.MouseEvent, tag: SubMenuItem) => {
+    e.stopPropagation();
+    setEditingTagId(tag.id);
+    setEditingTagName(tag.label);
+  };
+
+  const handleSaveRename = (tagId: string) => {
+    const trimmed = editingTagName.trim();
+    if (trimmed) {
+      setTags((prev) =>
+        prev.map((t) => (t.id === tagId ? { ...t, label: trimmed } : t))
+      );
+      renameTag?.(tagId, trimmed);
+    }
+    setEditingTagId(null);
+    setEditingTagName('');
+  };
+
+  const handleCancelRename = () => {
+    setEditingTagId(null);
+    setEditingTagName('');
+  };
 
   const handleDeleteTag = (e: React.MouseEvent, tagId: string) => {
     e.stopPropagation();
@@ -233,6 +261,52 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div className="sub-menu-tree">
                 {tags.map((sub) => {
                   const isSubActive = currentTab === sub.id;
+                  const isEditingThisTag = editingTagId === sub.id;
+
+                  if (isEditingThisTag) {
+                    return (
+                      <div
+                        key={sub.id}
+                        className="add-tag-inline-form rename-tag-form"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <span
+                          className="colored-dot"
+                          style={{ backgroundColor: sub.dotColor }}
+                        />
+                        <input
+                          type="text"
+                          className="add-tag-input"
+                          value={editingTagName}
+                          onChange={(e) => setEditingTagName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveRename(sub.id);
+                            if (e.key === 'Escape') handleCancelRename();
+                          }}
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          className="btn-tag-action confirm"
+                          onClick={() => handleSaveRename(sub.id)}
+                          title="Save"
+                          aria-label="Save rename"
+                        >
+                          <Check size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-tag-action cancel"
+                          onClick={handleCancelRename}
+                          title="Cancel"
+                          aria-label="Cancel rename"
+                        >
+                          <X size={13} />
+                        </button>
+                      </div>
+                    );
+                  }
+
                   return (
                     <div
                       key={sub.id}
@@ -240,6 +314,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       tabIndex={0}
                       className={`sub-menu-item ${isSubActive ? 'sub-active' : ''}`}
                       onClick={() => handleTabClick(sub.id)}
+                      onDoubleClick={(e) => handleStartRename(e, sub)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           handleTabClick(sub.id);
@@ -256,23 +331,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       {sub.badge && (
                         <span className="badge-pill sub-badge">{sub.badge}</span>
                       )}
-                      <button
-                        type="button"
-                        className="btn-del-tag"
-                        title="Delete tag"
-                        aria-label="Delete tag"
-                        onClick={(e) => handleDeleteTag(e, sub.id)}
-                        onMouseEnter={() => setHoveredDeleteTagId(sub.id)}
-                        onMouseLeave={() => setHoveredDeleteTagId(null)}
-                      >
-                        {hoveredDeleteTagId === sub.id ? (
-                          <Trash2 size={14} />
-                        ) : (
-                          <Trash size={14} />
-                        )}
-                      </button>
+                      <div className="tag-actions-group">
+                        <button
+                          type="button"
+                          className="btn-edit-tag"
+                          title="Rename tag"
+                          aria-label="Rename tag"
+                          onClick={(e) => handleStartRename(e, sub)}
+                        >
+                          <Pencil size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-del-tag"
+                          title="Delete tag"
+                          aria-label="Delete tag"
+                          onClick={(e) => handleDeleteTag(e, sub.id)}
+                          onMouseEnter={() => setHoveredDeleteTagId(sub.id)}
+                          onMouseLeave={() => setHoveredDeleteTagId(null)}
+                        >
+                          {hoveredDeleteTagId === sub.id ? (
+                            <Trash2 size={14} />
+                          ) : (
+                            <Trash size={14} />
+                          )}
+                        </button>
+                      </div>
                     </div>
-
                   );
                 })}
 

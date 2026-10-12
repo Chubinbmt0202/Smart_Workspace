@@ -92,6 +92,19 @@ export function Home() {
     }
   };
 
+  const handleRenameTag = (tagId: string, newName: string) => {
+    setNotes((prev) =>
+      prev.map((n) =>
+        n.tag.toLowerCase() === tagId.toLowerCase()
+          ? { ...n, tag: newName }
+          : n
+      )
+    );
+    if (activeCategory.toLowerCase() === tagId.toLowerCase()) {
+      setActiveCategory(newName);
+    }
+  };
+
   return (
     <div className="app-frame">
       {/* Sidebar */}
@@ -102,6 +115,7 @@ export function Home() {
         onToggleNotifications={() => setIsNotificationsOpen((prev) => !prev)}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        renameTag={handleRenameTag}
       />
 
       {/* Main Content Area */}

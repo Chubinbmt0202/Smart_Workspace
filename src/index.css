@@ -416,9 +416,26 @@ body {
   box-shadow: 0 3px 8px rgba(37, 99, 235, 0.32);
 }
 
-/* Delete tag button inside sub-menu-item */
-.btn-del-tag {
+/* Actions group (edit & delete) inside sub-menu-item */
+.tag-actions-group {
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.18s ease;
+  transform: scale(0.95);
+}
+
+.sub-menu-item:hover .tag-actions-group {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+}
+
+.btn-edit-tag,
+.btn-del-tag {
   width: 22px;
   height: 22px;
   border-radius: 6px;
@@ -429,24 +446,25 @@ body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: all 0.15s ease;
   padding: 0;
-  opacity: 0;
-  visibility: hidden;
-  transform: scale(0.9);
 }
 
-/* Appear when hovering over the parent item */
-.sub-menu-item:hover .btn-del-tag {
-  opacity: 1;
-  visibility: visible;
-  transform: scale(1);
+.btn-edit-tag:hover {
+  background-color: #eff6ff;
+  color: #2563eb;
+  transform: scale(1.1);
 }
 
 .btn-del-tag:hover {
   background-color: #fee2e2;
   color: #ef4444;
   transform: scale(1.1);
+}
+
+.rename-tag-form {
+  margin-top: 0;
+  margin-bottom: 2px;
 }
 
 .btn-add-tag-quick {
