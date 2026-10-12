@@ -2,15 +2,9 @@ import React, { useState } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
-  Search,
-  HelpCircle,
-  Settings,
   Calendar as CalendarIcon,
-  LayoutGrid,
-  Grid,
   Plus,
   Paperclip,
-  Clock
 } from 'lucide-react';
 import type { NoteItem } from '../../types/note';
 
@@ -103,7 +97,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   notes,
   onSelectNote,
   onOpenAddModalWithDate,
-  onSwitchToGrid
 }) => {
   // Current viewed month/year (defaults to October 2026 as in screenshot)
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date(2026, 9, 12));
@@ -121,10 +114,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
   const handleNextMonth = () => {
     setCurrentDate(new Date(year, month + 1, 1));
-  };
-
-  const handleGoToday = () => {
-    setCurrentDate(new Date(2026, 9, 12));
   };
 
   // Build days grid for the month view

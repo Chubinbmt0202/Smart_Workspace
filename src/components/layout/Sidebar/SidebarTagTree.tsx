@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Check, X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import type { TagItem } from '../../../types/tag';
 import { SidebarTagItem } from './SidebarTagItem';
 
@@ -28,16 +28,10 @@ interface SidebarTagTreeProps {
 export const SidebarTagTree: React.FC<SidebarTagTreeProps> = ({
   tags,
   currentTab,
-  isAddingTag,
-  newTagName,
   editingTagId,
   editingTagName,
   hoveredDeleteTagId,
   onSelectTag,
-  onStartAddTag,
-  onCancelAddTag,
-  onChangeNewTagName,
-  onConfirmAddTag,
   onStartRenameTag,
   onChangeEditingTagName,
   onConfirmRenameTag,

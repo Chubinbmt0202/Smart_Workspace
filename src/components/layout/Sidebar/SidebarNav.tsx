@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Inbox, Clock, Trash2, Plus, Calendar } from 'lucide-react';
+import { Home, Inbox, Trash2, Calendar } from 'lucide-react';
 import type { TagItem } from '../../../types/tag';
 import { SidebarTagTree } from './SidebarTagTree';
 
