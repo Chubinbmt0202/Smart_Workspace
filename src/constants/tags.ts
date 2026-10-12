@@ -1,10 +1,9 @@
 import type { TagItem } from '../types/tag';
 
 export const INITIAL_TAGS: TagItem[] = [
-  { id: 'primary', label: 'Primary', dotColor: '#3b82f6' },
-  { id: 'business', label: 'Business', dotColor: '#ef4444' },
+  { id: 'personal', label: 'Personal', dotColor: '#3b82f6' },
   { id: 'projects', label: 'Projects', dotColor: '#f59e0b' },
-  { id: 'game', label: 'Game', dotColor: '#8b5cf6' }
+  { id: 'business', label: 'Business', dotColor: '#ef4444' }
 ];
 
 export const TAG_COLOR_PALETTE = [

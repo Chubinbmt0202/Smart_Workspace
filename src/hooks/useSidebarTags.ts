@@ -3,6 +3,7 @@ import type { TagItem } from '../types/tag';
 import { INITIAL_TAGS, TAG_COLOR_PALETTE } from '../constants/tags';
 
 interface UseSidebarTagsOptions {
+  tags?: TagItem[];
   onAddTag?: (tag: TagItem) => void;
   onDeleteTag?: (tagId: string) => void;
   renameTag?: (tagId: string, newName: string) => void;
@@ -11,9 +12,18 @@ interface UseSidebarTagsOptions {
 }
 
 export function useSidebarTags(options: UseSidebarTagsOptions = {}) {
-  const { onAddTag, onDeleteTag, renameTag, currentTab, onSelectTab } = options;
+  const {
+    tags: propTags,
+    onAddTag,
+    onDeleteTag,
+    renameTag,
+    currentTab,
+    onSelectTab
+  } = options;
 
-  const [tags, setTags] = useState<TagItem[]>(INITIAL_TAGS);
+  const [internalTags, setInternalTags] = useState<TagItem[]>(INITIAL_TAGS);
+  const tags = propTags ?? internalTags;
+
   const [isAddingTag, setIsAddingTag] = useState(false);
   const [newTagName, setNewTagName] = useState('');
   const [hoveredDeleteTagId, setHoveredDeleteTagId] = useState<string | null>(null);
@@ -27,7 +37,8 @@ export function useSidebarTags(options: UseSidebarTagsOptions = {}) {
       return;
     }
 
-    const randomColor = TAG_COLOR_PALETTE[tags.length % TAG_COLOR_PALETTE.length];
+    const randomColor =
+      TAG_COLOR_PALETTE[tags.length % TAG_COLOR_PALETTE.length];
     const newTagId = trimmed.toLowerCase().replace(/\s+/g, '-');
 
     const newTag: TagItem = {
@@ -36,17 +47,26 @@ export function useSidebarTags(options: UseSidebarTagsOptions = {}) {
       dotColor: randomColor
     };
 
-    setTags((prev) => [...prev, newTag]);
+    if (propTags && onAddTag) {
+      onAddTag(newTag);
+    } else {
+      setInternalTags((prev) => [...prev, newTag]);
+      onAddTag?.(newTag);
+    }
+
     setNewTagName('');
     setIsAddingTag(false);
-    onAddTag?.(newTag);
     onSelectTab?.(newTagId);
   };
 
   const handleDeleteTag = (e: React.MouseEvent, tagId: string) => {
     e.stopPropagation();
-    setTags((prev) => prev.filter((t) => t.id !== tagId));
-    onDeleteTag?.(tagId);
+    if (propTags && onDeleteTag) {
+      onDeleteTag(tagId);
+    } else {
+      setInternalTags((prev) => prev.filter((t) => t.id !== tagId));
+      onDeleteTag?.(tagId);
+    }
     if (currentTab === tagId) {
       onSelectTab?.('all-inboxes');
     }
@@ -61,10 +81,14 @@ export function useSidebarTags(options: UseSidebarTagsOptions = {}) {
   const handleSaveRename = (tagId: string) => {
     const trimmed = editingTagName.trim();
     if (trimmed) {
-      setTags((prev) =>
-        prev.map((t) => (t.id === tagId ? { ...t, label: trimmed } : t))
-      );
-      renameTag?.(tagId, trimmed);
+      if (propTags && renameTag) {
+        renameTag(tagId, trimmed);
+      } else {
+        setInternalTags((prev) =>
+          prev.map((t) => (t.id === tagId ? { ...t, label: trimmed } : t))
+        );
+        renameTag?.(tagId, trimmed);
+      }
     }
     setEditingTagId(null);
     setEditingTagName('');

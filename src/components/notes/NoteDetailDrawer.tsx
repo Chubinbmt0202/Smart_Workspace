@@ -11,6 +11,7 @@ import {
   Tag
 } from 'lucide-react';
 import type { NoteItem } from '../../types/note';
+import type { TagItem } from '../../types/tag';
 
 export interface NoteDetailDrawerProps {
   note: NoteItem | null;
@@ -18,6 +19,8 @@ export interface NoteDetailDrawerProps {
   onClose: () => void;
   onUpdateNote: (note: NoteItem) => void;
   onDeleteNote: (id: string) => void;
+  availableTags?: TagItem[];
+  onAddNewTag?: (tagName: string) => void;
 }
 
 export const NoteDetailDrawer: React.FC<NoteDetailDrawerProps> = ({
@@ -25,7 +28,9 @@ export const NoteDetailDrawer: React.FC<NoteDetailDrawerProps> = ({
   isOpen,
   onClose,
   onUpdateNote,
-  onDeleteNote
+  onDeleteNote,
+  availableTags = [],
+  onAddNewTag
 }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -118,6 +123,14 @@ export const NoteDetailDrawer: React.FC<NoteDetailDrawerProps> = ({
     if (tag === 'Business') return { backgroundColor: '#ef4444', color: '#fff' };
     return { backgroundColor: '#8b5cf6', color: '#fff' };
   };
+
+  const baseTagNames = ['Personal', 'Projects', 'Business'];
+  const allTagNames = Array.from(
+    new Set([
+      ...baseTagNames,
+      ...availableTags.map((t) => t.label)
+    ])
+  );
 
   return (
     <>
@@ -212,6 +225,40 @@ export const NoteDetailDrawer: React.FC<NoteDetailDrawerProps> = ({
             onChange={(e) => setContent(e.target.value)}
             placeholder="Nhập nội dung ghi chú ở đây..."
           />
+
+          {/* Tag Selector */}
+          <div className="drawer-section">
+            <span className="drawer-section-title">Nhãn (Tag)</span>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <select
+                className="form-select"
+                style={{ padding: '6px 10px', fontSize: '13px', borderRadius: '8px' }}
+                value={allTagNames.includes(tag) ? tag : (tag ? tag : 'Personal')}
+                onChange={(e) => {
+                  if (e.target.value === '__custom__') {
+                    const newTag = prompt('Nhập tên tag mới:', '');
+                    if (newTag && newTag.trim()) {
+                      const trimmed = newTag.trim();
+                      setTag(trimmed);
+                      onAddNewTag?.(trimmed);
+                    }
+                  } else {
+                    setTag(e.target.value);
+                  }
+                }}
+              >
+                {allTagNames.map((tName) => (
+                  <option key={tName} value={tName}>
+                    {tName}
+                  </option>
+                ))}
+                {!allTagNames.includes(tag) && tag && (
+                  <option value={tag}>{tag}</option>
+                )}
+                <option value="__custom__">+ Tạo tag mới...</option>
+              </select>
+            </div>
+          </div>
 
           {/* Collaborators / Members */}
           <div className="drawer-section">

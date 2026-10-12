@@ -19,6 +19,8 @@ export function Home() {
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
 
   const {
+    tags,
+    categoryTabs,
     filteredNotes,
     activeCategory,
     setActiveCategory,
@@ -29,22 +31,47 @@ export function Home() {
     handleUpdateNote,
     handleAddNote,
     handleDeleteNote,
+    handleAddTag,
+    handleDeleteTag,
     handleRenameTag,
     handleAddTagClick
   } = useNotes();
 
   const handleSelectSidebarTab = (tab: string) => {
     setSidebarTab(tab);
-    if (tab === 'projects') {
-      setActiveCategory('Projects');
-    } else if (tab === 'business') {
-      setActiveCategory('Business');
-    } else if (tab === 'primary') {
-      setActiveCategory('Personal');
-    } else if (tab === 'all-inboxes') {
+    if (tab === 'all-inboxes') {
       setActiveCategory('All');
     } else {
-      setActiveCategory(tab);
+      const matched = tags.find(
+        (t) => t.id === tab || t.label.toLowerCase() === tab.toLowerCase()
+      );
+      if (matched) {
+        setActiveCategory(matched.label);
+      } else if (tab === 'projects') {
+        setActiveCategory('Projects');
+      } else if (tab === 'business') {
+        setActiveCategory('Business');
+      } else if (tab === 'primary' || tab === 'personal') {
+        setActiveCategory('Personal');
+      } else {
+        setActiveCategory(tab);
+      }
+    }
+  };
+
+  const handleSelectCategoryTab = (category: string) => {
+    setActiveCategory(category);
+    if (category === 'All') {
+      setSidebarTab('all-inboxes');
+    } else {
+      const matched = tags.find(
+        (t) =>
+          t.label.toLowerCase() === category.toLowerCase() ||
+          t.id === category.toLowerCase()
+      );
+      if (matched) {
+        setSidebarTab(matched.id);
+      }
     }
   };
 
@@ -58,6 +85,9 @@ export function Home() {
         onToggleNotifications={() => setIsNotificationsOpen((prev) => !prev)}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        tags={tags}
+        onAddTag={handleAddTag}
+        onDeleteTag={handleDeleteTag}
         renameTag={handleRenameTag}
       />
 
@@ -78,7 +108,9 @@ export function Home() {
         {/* Category Tabs */}
         <CategoryTabs
           activeTab={activeCategory}
-          onSelectTab={setActiveCategory}
+          onSelectTab={handleSelectCategoryTab}
+          tabs={categoryTabs}
+          onAddTag={handleAddTag}
         />
 
         {/* Notes Grid or Empty State */}
@@ -110,6 +142,8 @@ export function Home() {
         onClose={() => setIsAddModalOpen(false)}
         onAddNote={handleAddNote}
         defaultCategory={activeCategory}
+        availableTags={tags}
+        onAddNewTag={handleAddTag}
       />
 
       {/* Note Detail Drawer */}
@@ -119,6 +153,8 @@ export function Home() {
         onClose={() => setSelectedNote(null)}
         onUpdateNote={handleUpdateNote}
         onDeleteNote={handleDeleteNote}
+        availableTags={tags}
+        onAddNewTag={handleAddTag}
       />
     </div>
   );

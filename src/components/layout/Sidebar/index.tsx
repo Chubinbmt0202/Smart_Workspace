@@ -12,6 +12,7 @@ export interface SidebarProps {
   onToggleNotifications?: () => void;
   searchQuery?: string;
   onSearchChange?: (query: string) => void;
+  tags?: TagItem[];
   onAddTag?: (tag: TagItem) => void;
   onDeleteTag?: (tagId: string) => void;
   renameTag?: (tagId: string, newName: string) => void;
@@ -24,6 +25,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleNotifications,
   searchQuery = '',
   onSearchChange,
+  tags: propTags,
   onAddTag,
   onDeleteTag,
   renameTag
@@ -49,6 +51,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     handleSaveRename,
     handleCancelRename
   } = useSidebarTags({
+    tags: propTags,
     onAddTag,
     onDeleteTag,
     renameTag,

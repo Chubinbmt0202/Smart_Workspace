@@ -1,36 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import type { NoteItem } from '../../types/note';
+import type { TagItem } from '../../types/tag';
 
 export interface AddNoteModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAddNote: (newNote: NoteItem) => void;
   defaultCategory?: string;
+  availableTags?: TagItem[];
+  onAddNewTag?: (tagName: string) => void;
 }
 
 export const AddNoteModal: React.FC<AddNoteModalProps> = ({
   isOpen,
   onClose,
   onAddNote,
-  defaultCategory = 'Personal'
+  defaultCategory = 'Personal',
+  availableTags = [],
+  onAddNewTag
 }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const initialCat = ['Personal', 'Projects', 'Business'].includes(defaultCategory)
-    ? (defaultCategory as 'Personal' | 'Projects' | 'Business')
-    : 'Personal';
-  const [category, setCategory] = useState<'Personal' | 'Projects' | 'Business'>(initialCat);
+  const [category, setCategory] = useState<string>(
+    defaultCategory !== 'All' ? defaultCategory : 'Personal'
+  );
+  const [customTag, setCustomTag] = useState('');
   const [attachments, setAttachments] = useState('2');
   const [reminderDay, setReminderDay] = useState('Today');
   const [isUrgent, setIsUrgent] = useState(false);
 
   // Sync category when modal opens
-  React.useEffect(() => {
+  useEffect(() => {
     if (isOpen) {
-      if (['Personal', 'Projects', 'Business'].includes(defaultCategory)) {
-        setCategory(defaultCategory as 'Personal' | 'Projects' | 'Business');
-      }
+      setCategory(defaultCategory !== 'All' ? defaultCategory : 'Personal');
+      setCustomTag('');
     }
   }, [isOpen, defaultCategory]);
 
@@ -40,13 +44,29 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
     e.preventDefault();
     if (!title.trim()) return;
 
+    let finalTag = category;
+    if (category === '__custom__') {
+      const trimmedCustom = customTag.trim();
+      if (!trimmedCustom) return;
+      finalTag = trimmedCustom;
+      onAddNewTag?.(trimmedCustom);
+    }
+
     const todayDate = new Date();
     const formattedDate = `${todayDate.getDate()}.${todayDate.getMonth() + 1}.${todayDate.getFullYear()}`;
 
+    const finalTagLower = finalTag.toLowerCase();
+    const tagType =
+      finalTagLower === 'personal'
+        ? 'personal'
+        : finalTagLower === 'projects'
+        ? 'projects'
+        : 'custom';
+
     const newNote: NoteItem = {
       id: `note-${Date.now()}`,
-      tag: category,
-      tagType: category === 'Personal' ? 'personal' : 'projects',
+      tag: finalTag,
+      tagType,
       date: formattedDate,
       attachmentCount: attachments ? parseInt(attachments, 10) : undefined,
       title: title.trim(),
@@ -54,7 +74,8 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
       avatars: [
         {
           name: 'Josh',
-          avatarUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80'
+          avatarUrl:
+            'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80'
         }
       ],
       reminder: reminderDay
@@ -70,7 +91,17 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
     onClose();
     setTitle('');
     setContent('');
+    setCustomTag('');
   };
+
+  // Build unique tag options
+  const baseTagNames = ['Personal', 'Projects', 'Business'];
+  const allTagNames = Array.from(
+    new Set([
+      ...baseTagNames,
+      ...availableTags.map((t) => t.label)
+    ])
+  );
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -110,21 +141,33 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
 
           <div className="form-row">
             <div className="form-group half">
-              <label htmlFor="note-category">Category</label>
+              <label htmlFor="note-category">Category / Tag</label>
               <select
                 id="note-category"
                 className="form-select"
                 value={category}
-                onChange={(e) =>
-                  setCategory(
-                    e.target.value as 'Personal' | 'Projects' | 'Business'
-                  )
-                }
+                onChange={(e) => setCategory(e.target.value)}
               >
-                <option value="Personal">Personal</option>
-                <option value="Projects">Projects</option>
-                <option value="Business">Business</option>
+                {allTagNames.map((tagName) => (
+                  <option key={tagName} value={tagName}>
+                    {tagName}
+                  </option>
+                ))}
+                <option value="__custom__">+ Thêm tag mới...</option>
               </select>
+
+              {category === '__custom__' && (
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Nhập tên tag mới..."
+                  value={customTag}
+                  onChange={(e) => setCustomTag(e.target.value)}
+                  style={{ marginTop: '8px' }}
+                  required
+                  autoFocus
+                />
+              )}
             </div>
 
             <div className="form-group half">
