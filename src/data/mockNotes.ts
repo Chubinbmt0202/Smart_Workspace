@@ -36,7 +36,7 @@ export const INITIAL_NOTES: NoteItem[] = [
     id: 'note-1',
     tag: 'Personal',
     tagType: 'personal',
-    date: '20.12.2020',
+    date: '12.10.2026',
     attachmentCount: 2,
     attachments: [
       { name: 'Photo_Shooting_Plan.pdf', size: '2.4 MB', type: 'application/pdf' },
@@ -64,7 +64,7 @@ export const INITIAL_NOTES: NoteItem[] = [
     id: 'note-biz-1',
     tag: 'Business',
     tagType: 'projects',
-    date: '18.12.2020',
+    date: '15.10.2026',
     attachmentCount: 3,
     attachments: [
       { name: 'Q4_Financial_Report.xlsx', size: '1.8 MB', type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
@@ -89,7 +89,7 @@ export const INITIAL_NOTES: NoteItem[] = [
     id: 'note-2',
     tag: 'Projects',
     tagType: 'projects',
-    date: '15.12.2020',
+    date: '12.10.2026',
     attachmentCount: 2,
     attachments: [
       { name: 'Taxi_App_Concept_v1.pdf', size: '3.6 MB', type: 'application/pdf' },
@@ -114,7 +114,7 @@ export const INITIAL_NOTES: NoteItem[] = [
     id: 'note-3',
     tag: 'Personal',
     tagType: 'personal',
-    date: '10.12.2020',
+    date: '08.10.2026',
     attachmentCount: 2,
     attachments: [
       { name: 'Meeting_Agenda.docx', size: '450 KB', type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
@@ -138,7 +138,7 @@ export const INITIAL_NOTES: NoteItem[] = [
     id: 'note-4',
     tag: 'Projects',
     tagType: 'projects',
-    date: '5.12.2020',
+    date: '20.10.2026',
     title: 'Finish design for Seam site',
     content: 'I need to finish design for studio of interior design. And sent a last version. After this i need to send it for Front end Developers for watching this project.',
     avatars: [
@@ -158,7 +158,7 @@ export const INITIAL_NOTES: NoteItem[] = [
     id: 'note-5',
     tag: 'Add Tag',
     tagType: 'custom',
-    date: '1.12.2020',
+    date: '25.10.2026',
     attachmentCount: 2,
     title: 'My thoughts for today',
     content: "All time we need to have a dream. If you haven't dream you haven't goal. And therefore your life will be empty and not full of meaning. That is why don't afraid dreaming.",
@@ -179,7 +179,7 @@ export const INITIAL_NOTES: NoteItem[] = [
     id: 'note-6',
     tag: 'Personal',
     tagType: 'personal',
-    date: '20.11.2020',
+    date: '28.10.2026',
     title: 'Meeting with Alice',
     content: 'I have interesting project for Josh. And we need to meet for discuss all details of this project. Maybe in future he will have work with this project with me.',
     avatars: [],

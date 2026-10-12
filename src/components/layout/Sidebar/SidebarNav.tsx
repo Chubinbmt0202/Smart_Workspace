@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Inbox, Clock, Trash2, Plus } from 'lucide-react';
+import { Home, Inbox, Clock, Trash2, Plus, Calendar } from 'lucide-react';
 import type { TagItem } from '../../../types/tag';
 import { SidebarTagTree } from './SidebarTagTree';
 
@@ -119,15 +119,15 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
           )}
         </div>
 
-        {/* Scheduled */}
+        {/* Calendar */}
         <button
           type="button"
-          className={`menu-item ${currentTab === 'scheduled' ? 'active' : ''}`}
-          onClick={() => onSelectTab('scheduled')}
-          title="Scheduled"
+          className={`menu-item ${currentTab === 'calendar' || currentTab === 'scheduled' ? 'active' : ''}`}
+          onClick={() => onSelectTab('calendar')}
+          title="Calendar"
         >
-          <Clock size={18} className="item-icon" />
-          {!isCollapsed && <span className="item-label">Scheduled</span>}
+          <Calendar size={18} className="item-icon" />
+          {!isCollapsed && <span className="item-label">Calendar</span>}
         </button>
 
         {/* Recycle Bin */}

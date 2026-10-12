@@ -28,6 +28,7 @@ export interface AddNoteModalProps {
   defaultCategory?: string;
   availableTags?: TagItem[];
   onAddNewTag?: (tagName: string) => void;
+  initialDate?: { day: number; month: number; year: number };
 }
 
 export const AddNoteModal: React.FC<AddNoteModalProps> = ({
@@ -36,7 +37,8 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
   onAddNote,
   defaultCategory = 'Personal',
   availableTags = [],
-  onAddNewTag
+  onAddNewTag,
+  initialDate
 }) => {
   // 1. Title
   const [title, setTitle] = useState('');
@@ -56,9 +58,9 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
     now.getMinutes()
   ).padStart(2, '0')}`;
   const [hour, setHour] = useState<string>(currentHourStr);
-  const [day, setDay] = useState<number>(now.getDate());
-  const [month, setMonth] = useState<number>(now.getMonth() + 1);
-  const [year, setYear] = useState<number>(now.getFullYear());
+  const [day, setDay] = useState<number>(initialDate ? initialDate.day : now.getDate());
+  const [month, setMonth] = useState<number>(initialDate ? initialDate.month : now.getMonth() + 1);
+  const [year, setYear] = useState<number>(initialDate ? initialDate.year : now.getFullYear());
 
   // 5. Upload Document
   const [uploadedFiles, setUploadedFiles] = useState<UploadedDoc[]>([]);
@@ -76,11 +78,17 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
           openNow.getMinutes()
         ).padStart(2, '0')}`
       );
-      setDay(openNow.getDate());
-      setMonth(openNow.getMonth() + 1);
-      setYear(openNow.getFullYear());
+      if (initialDate) {
+        setDay(initialDate.day);
+        setMonth(initialDate.month);
+        setYear(initialDate.year);
+      } else {
+        setDay(openNow.getDate());
+        setMonth(openNow.getMonth() + 1);
+        setYear(openNow.getFullYear());
+      }
     }
-  }, [isOpen, defaultCategory]);
+  }, [isOpen, defaultCategory, initialDate]);
 
   if (!isOpen) return null;
 

@@ -6,7 +6,8 @@ import {
   NoteCard,
   AddNoteModal,
   EmptyState,
-  NoteDetailDrawer
+  NoteDetailDrawer,
+  CalendarView
 } from '../components';
 import { useNotes } from '../hooks/useNotes';
 import { INITIAL_NOTIFICATIONS, USER_PROFILE } from '../data/mockNotes';
@@ -14,6 +15,10 @@ import type { NotificationItem } from '../types';
 
 export function Home() {
   const [sidebarTab, setSidebarTab] = useState<string>('projects');
+  const [viewMode, setViewMode] = useState<'grid' | 'calendar'>('grid');
+  const [modalInitialDate, setModalInitialDate] = useState<
+    { day: number; month: number; year: number } | undefined
+  >(undefined);
   const [notifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
@@ -39,6 +44,14 @@ export function Home() {
 
   const handleSelectSidebarTab = (tab: string) => {
     setSidebarTab(tab);
+
+    if (tab === 'calendar' || tab === 'scheduled') {
+      setViewMode('calendar');
+      return;
+    }
+
+    setViewMode('grid');
+
     if (tab === 'all-inboxes') {
       setActiveCategory('All');
     } else {
@@ -75,13 +88,25 @@ export function Home() {
     }
   };
 
+  const handleOpenAddModalWithDate = (date: {
+    day: number;
+    month: number;
+    year: number;
+  }) => {
+    setModalInitialDate(date);
+    setIsAddModalOpen(true);
+  };
+
   return (
     <div className="app-frame">
       {/* Sidebar */}
       <Sidebar
         currentTab={sidebarTab}
         onSelectTab={handleSelectSidebarTab}
-        onOpenAddModal={() => setIsAddModalOpen(true)}
+        onOpenAddModal={() => {
+          setModalInitialDate(undefined);
+          setIsAddModalOpen(true);
+        }}
         onToggleNotifications={() => setIsNotificationsOpen((prev) => !prev)}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -110,10 +135,19 @@ export function Home() {
           activeTab={activeCategory}
           onSelectTab={handleSelectCategoryTab}
           tabs={categoryTabs}
+          viewMode={viewMode}
+          onToggleViewMode={setViewMode}
         />
 
-        {/* Notes Grid or Empty State */}
-        {filteredNotes.length > 0 ? (
+        {/* View Content: Calendar View vs Notes Grid */}
+        {viewMode === 'calendar' ? (
+          <CalendarView
+            notes={filteredNotes}
+            onSelectNote={setSelectedNote}
+            onOpenAddModalWithDate={handleOpenAddModalWithDate}
+            onSwitchToGrid={() => setViewMode('grid')}
+          />
+        ) : filteredNotes.length > 0 ? (
           <div className="notes-grid">
             {filteredNotes.map((note) => (
               <NoteCard
@@ -129,7 +163,10 @@ export function Home() {
           <EmptyState
             category={activeCategory}
             searchQuery={searchQuery}
-            onOpenAddModal={() => setIsAddModalOpen(true)}
+            onOpenAddModal={() => {
+              setModalInitialDate(undefined);
+              setIsAddModalOpen(true);
+            }}
             onClearSearch={() => setSearchQuery('')}
           />
         )}
@@ -138,11 +175,15 @@ export function Home() {
       {/* Add Note Modal */}
       <AddNoteModal
         isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setModalInitialDate(undefined);
+        }}
         onAddNote={handleAddNote}
         defaultCategory={activeCategory}
         availableTags={tags}
         onAddNewTag={handleAddTag}
+        initialDate={modalInitialDate}
       />
 
       {/* Note Detail Drawer */}
