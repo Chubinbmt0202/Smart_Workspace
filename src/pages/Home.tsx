@@ -23,6 +23,7 @@ export function Home() {
   >(undefined);
   const [notifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
+  const [isUserPopoverOpen, setIsUserPopoverOpen] = useState<boolean>(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
 
   const {
@@ -51,6 +52,16 @@ export function Home() {
 
   const todayNotes = useMemo(() => notes.filter(isNoteToday), [notes]);
   const todayNotesCount = todayNotes.length;
+
+  const handleToggleNotifications = () => {
+    setIsUserPopoverOpen(false);
+    setIsNotificationsOpen((prev) => !prev);
+  };
+
+  const handleToggleUserPopover = () => {
+    setIsNotificationsOpen(false);
+    setIsUserPopoverOpen((prev) => !prev);
+  };
 
   const handleSelectSidebarTab = (tab: string) => {
     setSidebarTab(tab);
@@ -121,7 +132,7 @@ export function Home() {
           setModalInitialDate(undefined);
           setIsAddModalOpen(true);
         }}
-        onToggleNotifications={() => setIsNotificationsOpen((prev) => !prev)}
+        onToggleNotifications={handleToggleNotifications}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         tags={tags}
@@ -143,11 +154,13 @@ export function Home() {
             todayNotes={todayNotes}
             todayNotesCount={todayNotesCount}
             isNotificationsOpen={isNotificationsOpen}
-            onToggleNotifications={() => setIsNotificationsOpen((prev) => !prev)}
+            isUserPopoverOpen={isUserPopoverOpen}
+            onToggleNotifications={handleToggleNotifications}
             onCloseNotifications={() => setIsNotificationsOpen(false)}
+            onToggleUserPopover={handleToggleUserPopover}
+            onCloseUserPopover={() => setIsUserPopoverOpen(false)}
             userName={USER_PROFILE.name}
             userAvatar={USER_PROFILE.avatarUrl}
-            onSelectNote={setSelectedNote}
           />
 
           {/* Category Tabs (shown when not in recycle bin) */}
