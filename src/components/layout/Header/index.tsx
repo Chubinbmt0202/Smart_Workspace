@@ -21,8 +21,6 @@ export const Header: React.FC<HeaderProps> = ({
   isNotificationsOpen,
   onToggleNotifications,
   onCloseNotifications,
-  userName,
-  userAvatar
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -81,17 +79,6 @@ export const Header: React.FC<HeaderProps> = ({
               onClose={onCloseNotifications}
             />
           )}
-        </div>
-
-        {/* User Profile Pill */}
-        <div className="user-profile">
-          <img
-            src={userAvatar}
-            alt={userName}
-            className="user-avatar"
-            id="user-profile-avatar"
-          />
-          <span className="user-name">{userName}</span>
         </div>
       </div>
     </header>
