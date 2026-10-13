@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Sidebar,
   Header,
@@ -12,6 +12,7 @@ import {
 } from '../components';
 import { useNotes } from '../hooks/useNotes';
 import { INITIAL_NOTIFICATIONS, USER_PROFILE } from '../data/mockNotes';
+import { isNoteToday } from '../utils/date';
 import type { NotificationItem } from '../types';
 
 export function Home() {
@@ -21,10 +22,11 @@ export function Home() {
     { day: number; month: number; year: number } | undefined
   >(undefined);
   const [notifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(true);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
 
   const {
+    notes,
     tags,
     categoryTabs,
     filteredNotes,
@@ -46,6 +48,9 @@ export function Home() {
     handleRenameTag,
     handleAddTagClick
   } = useNotes();
+
+  const todayNotes = useMemo(() => notes.filter(isNoteToday), [notes]);
+  const todayNotesCount = todayNotes.length;
 
   const handleSelectSidebarTab = (tab: string) => {
     setSidebarTab(tab);
@@ -135,11 +140,14 @@ export function Home() {
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             notifications={notifications}
+            todayNotes={todayNotes}
+            todayNotesCount={todayNotesCount}
             isNotificationsOpen={isNotificationsOpen}
             onToggleNotifications={() => setIsNotificationsOpen((prev) => !prev)}
             onCloseNotifications={() => setIsNotificationsOpen(false)}
             userName={USER_PROFILE.name}
             userAvatar={USER_PROFILE.avatarUrl}
+            onSelectNote={setSelectedNote}
           />
 
           {/* Category Tabs (shown when not in recycle bin) */}
