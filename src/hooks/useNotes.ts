@@ -1,16 +1,68 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { NoteItem } from '../types/note';
 import type { TagItem } from '../types/tag';
 import { INITIAL_NOTES, INITIAL_DELETED_NOTES } from '../data/mockNotes';
 import { INITIAL_TAGS, TAG_COLOR_PALETTE } from '../constants/tags';
+import { noteApi } from '../services/api';
 
 export function useNotes() {
-  const [notes, setNotes] = useState<NoteItem[]>(INITIAL_NOTES);
-  const [deletedNotes, setDeletedNotes] = useState<NoteItem[]>(INITIAL_DELETED_NOTES);
-  const [tags, setTags] = useState<TagItem[]>(INITIAL_TAGS);
+  const [notes, setNotes] = useState<NoteItem[]>([]);
+  const [deletedNotes, setDeletedNotes] = useState<NoteItem[]>([]);
+  const [tags, setTags] = useState<TagItem[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedNote, setSelectedNote] = useState<NoteItem | null>(null);
+
+  useEffect(() => {
+    async function loadNotes() {
+      try {
+        const res = await noteApi.getAllNote();
+        console.log('Dữ liệu API trả về:', res);
+        const rawList = (res && res.data) ? res.data : (Array.isArray(res) ? res : []);
+        // Chuẩn hóa dữ liệu từ Supabase: nếu tag là Object thì lấy tên/label ra chuỗi string
+        const formattedNotes: NoteItem[] = rawList.map((item: any) => {
+          let tagName = 'Chưa gắn tag';
+          if (typeof item.tag === 'string' && item.tag.trim()) {
+            tagName = item.tag.trim();
+          } else if (item.tag && typeof item.tag === 'object') {
+            tagName = item.tag.name || item.tag.label || item.tag.title || 'Chưa gắn tag';
+          }
+
+          return {
+            ...item,
+            tag: tagName,
+            tagType: item.tagType || 'custom',
+            date: item.date || (item.created_at ? new Date(item.created_at).toLocaleDateString('vi-VN') : '')
+          };
+        });
+
+        setNotes(formattedNotes);
+      } catch (err) {
+        console.error('Failed to load notes:', err);
+      }
+    }
+
+    async function loadTags() {
+      try {
+        const res = await noteApi.getAllTags();
+        console.log('Dữ liệu API trả về:', res);
+        const rawList = (res && res.data) ? res.data : (Array.isArray(res) ? res : []);
+        const formattedTags: TagItem[] = rawList.map((item: any) => {
+          return {
+            ...item,
+            label: item.name || item.label || item.title || 'Chưa gắn tag',
+            dotColor: item.dotColor
+          };
+        });
+        setTags(formattedTags);
+      } catch (err) {
+        console.error('Failed to load tags:', err);
+      }
+    }
+
+    loadNotes();
+    loadTags();
+  }, []);
 
   // Helper to ensure a tag exists in the tags collection
   const ensureTagExists = useCallback((tagLabel: string) => {
@@ -55,7 +107,13 @@ export function useNotes() {
 
     // Also include any unique tags present in existing notes that might not be in tags list
     notes.forEach((n) => {
-      const noteTag = n.tag?.trim();
+      let rawTag = typeof n.tag === 'object' && n.tag !== null
+        ? ((n.tag as any).name || (n.tag as any).label || '')
+        : n.tag;
+      let noteTag = typeof rawTag === 'string' ? rawTag.trim() : '';
+      if (!noteTag) {
+        noteTag = 'Chưa gắn tag';
+      }
       if (
         noteTag &&
         noteTag.toLowerCase() !== 'all' &&
@@ -71,9 +129,16 @@ export function useNotes() {
 
   const filteredNotes = useMemo(() => {
     return notes.filter((note) => {
+      const getTagString = (tag: any): string => {
+        if (typeof tag === 'string') return tag;
+        if (tag && typeof tag === 'object') return tag.name || tag.label || tag.title || '';
+        return '';
+      };
+      const noteTagStr = getTagString(note.tag);
+
       // Filter by active category tab
       if (activeCategory !== 'All') {
-        const noteTagLower = (note.tag || '').toLowerCase();
+        const noteTagLower = noteTagStr.toLowerCase();
         const activeCatLower = activeCategory.toLowerCase();
 
         const isDirectMatch = noteTagLower === activeCatLower;
@@ -98,9 +163,9 @@ export function useNotes() {
       // Filter by search query
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
-        const matchesTitle = note.title.toLowerCase().includes(query);
-        const matchesContent = note.content.toLowerCase().includes(query);
-        const matchesTag = (note.tag || '').toLowerCase().includes(query);
+        const matchesTitle = (note.title || '').toLowerCase().includes(query);
+        const matchesContent = (note.content || '').toLowerCase().includes(query);
+        const matchesTag = noteTagStr.toLowerCase().includes(query);
         return matchesTitle || matchesContent || matchesTag;
       }
 
