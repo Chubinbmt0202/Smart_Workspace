@@ -1,7 +1,31 @@
 import { useState } from "react";
 
-export function LoginPage() {
+export function LoginPage({ onLogin }: { onLogin: () => void }) {
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  const handleEmailChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(event.target.value);
+  }
+
+  const handlePasswordChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(event.target.value);
+  }
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    try {
+      localStorage.setItem("email", email.trim());
+      localStorage.setItem("isLoggedIn", "true");
+      setError("");
+      onLogin();
+    } catch {
+      setError("Không thể lưu phiên đăng nhập. Vui lòng kiểm tra cài đặt trình duyệt.");
+    }
+  }
 
   return (
     <div className="login-page">
@@ -16,17 +40,24 @@ export function LoginPage() {
 
           <form
             className="login-form"
-            onSubmit={(event) => {
-              event.preventDefault();
-            }}
+            onSubmit={handleSubmit}
           >
             <label className="field" aria-label="Email or phone">
-              <input type="text" placeholder="Enter Email" />
+              <input
+                type="text"
+                placeholder="Enter Email"
+                value={email}
+                required
+                onChange={handleEmailChange}
+              />
             </label>
 
             <label className="field field--password" aria-label="Password">
               <input
                 type={showPassword ? "text" : "password"}
+                value={password}
+                required
+                onChange={handlePasswordChange}
                 placeholder="Password"
               />
               <button
@@ -41,6 +72,7 @@ export function LoginPage() {
             <button type="submit" className="sign-in-button">
               Sign in
             </button>
+            {error && <p className="login-error" role="alert">{error}</p>}
 
             <div className="divider">
               <span>Or Sign in with</span>

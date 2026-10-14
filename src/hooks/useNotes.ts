@@ -8,7 +8,7 @@ export function useNotes() {
   const [notes, setNotes] = useState<NoteItem[]>(INITIAL_NOTES);
   const [deletedNotes, setDeletedNotes] = useState<NoteItem[]>(INITIAL_DELETED_NOTES);
   const [tags, setTags] = useState<TagItem[]>(INITIAL_TAGS);
-  const [activeCategory, setActiveCategory] = useState<string>('Projects');
+  const [activeCategory, setActiveCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedNote, setSelectedNote] = useState<NoteItem | null>(null);
 

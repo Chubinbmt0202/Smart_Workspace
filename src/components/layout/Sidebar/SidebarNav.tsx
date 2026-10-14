@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Inbox, Trash2, Calendar } from 'lucide-react';
+import { Inbox, Trash2, Calendar } from 'lucide-react';
 import type { TagItem } from '../../../types/tag';
 import { SidebarTagTree } from './SidebarTagTree';
 
@@ -57,18 +57,6 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
   return (
     <div className="sidebar-scrollable-content">
       <div className="sidebar-menu-group">
-        {!isCollapsed && <div className="group-title">MAIN MENU</div>}
-
-        {/* Home */}
-        <button
-          type="button"
-          className={`menu-item ${currentTab === 'account' ? 'active' : ''}`}
-          onClick={() => onSelectTab('account')}
-          title="Home"
-        >
-          <Home size={18} className="item-icon" />
-          {!isCollapsed && <span className="item-label">Home</span>}
-        </button>
 
         {/* All Tags Container */}
         <div className="inbox-parent-container">

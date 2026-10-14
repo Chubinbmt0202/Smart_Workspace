@@ -16,7 +16,7 @@ import { isNoteToday } from '../utils/date';
 import type { NotificationItem } from '../types';
 
 export function Home() {
-  const [sidebarTab, setSidebarTab] = useState<string>('projects');
+  const [sidebarTab, setSidebarTab] = useState<string>('all-inboxes');
   const [viewMode, setViewMode] = useState<'grid' | 'calendar'>('grid');
   const [modalInitialDate, setModalInitialDate] = useState<
     { day: number; month: number; year: number } | undefined
