@@ -112,7 +112,7 @@ export const NotificationPopover: React.FC<NotificationPopoverProps> = ({
         {overdueNotifications.length > 0 && (
           <div className="notif-section">
             <div className="notif-section-title notif-overdue-title">
-              <span>You Forget!</span>
+              <span>Bỏ lỡ</span>
             </div>
             <div className="notification-list">
               {overdueNotifications.map((item) => (
