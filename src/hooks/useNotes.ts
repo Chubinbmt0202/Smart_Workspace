@@ -1,8 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { NoteItem } from '../types/note';
 import type { TagItem } from '../types/tag';
-import { INITIAL_NOTES, INITIAL_DELETED_NOTES } from '../data/mockNotes';
-import { INITIAL_TAGS, TAG_COLOR_PALETTE } from '../constants/tags';
+import { TAG_COLOR_PALETTE } from '../constants/tags';
 import { noteApi } from '../services/api';
 
 export function useNotes() {
