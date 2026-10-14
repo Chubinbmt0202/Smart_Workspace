@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, Calendar, ChevronRight } from 'lucide-react';
+import { Bell, Calendar } from 'lucide-react';
 import type { NotificationItem, NoteItem } from '../../../types/note';
 
 export interface NotificationPopoverProps {
@@ -146,15 +146,6 @@ export const NotificationPopover: React.FC<NotificationPopoverProps> = ({
               <p>Không có ghi chú nào hôm nay</p>
             </div>
           )}
-      </div>
-
-      <div
-        className="all-notifications-link"
-        role="button"
-        onClick={() => onClose?.()}
-      >
-        <span>Đóng thông báo</span>
-        <ChevronRight size={15} />
       </div>
     </div>
   );

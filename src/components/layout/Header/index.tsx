@@ -16,6 +16,8 @@ export interface HeaderProps {
   onCloseUserPopover: () => void;
   userName?: string;
   userAvatar?: string;
+  userEmail?: string;
+  onLogout: () => void;
   todayNotes?: NoteItem[];
   todayNotesCount?: number;
   onSelectNote?: (note: NoteItem) => void;
@@ -33,6 +35,8 @@ export const Header: React.FC<HeaderProps> = ({
   onCloseNotifications,
   userName,
   userAvatar,
+  userEmail,
+  onLogout,
   todayNotes = [],
   todayNotesCount = 0,
   onSelectNote,
@@ -137,7 +141,12 @@ export const Header: React.FC<HeaderProps> = ({
             />
           </button>
           {isUserPopoverOpen && (
-            <UserPopover userName={userName} userAvatar={userAvatar} />
+            <UserPopover
+              userName={userName}
+              userAvatar={userAvatar}
+              userEmail={userEmail}
+              onLogout={onLogout}
+            />
           )}
         </div>
       </div>

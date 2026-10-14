@@ -11,7 +11,14 @@ function App() {
     setIsLoggedIn(true)
   }
 
-  return isLoggedIn ? <Home /> : <LoginPage onLogin={handleLogin} />
+  const handleLogout = () => {
+    localStorage.removeItem('email')
+    localStorage.removeItem('isLoggedIn')
+    localStorage.removeItem('password')
+    setIsLoggedIn(false)
+  }
+
+  return isLoggedIn ? <Home onLogout={handleLogout} /> : <LoginPage onLogin={handleLogin} />
 }
 
 export default App

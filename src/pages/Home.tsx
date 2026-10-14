@@ -15,7 +15,7 @@ import { INITIAL_NOTIFICATIONS, USER_PROFILE } from '../data/mockNotes';
 import { isNoteToday } from '../utils/date';
 import type { NotificationItem } from '../types';
 
-export function Home() {
+export function Home({ onLogout }: { onLogout: () => void }) {
   const [sidebarTab, setSidebarTab] = useState<string>('all-inboxes');
   const [viewMode, setViewMode] = useState<'grid' | 'calendar'>('grid');
   const [modalInitialDate, setModalInitialDate] = useState<
@@ -161,6 +161,8 @@ export function Home() {
             onCloseUserPopover={() => setIsUserPopoverOpen(false)}
             userName={USER_PROFILE.name}
             userAvatar={USER_PROFILE.avatarUrl}
+            userEmail={localStorage.getItem('email') ?? undefined}
+            onLogout={onLogout}
           />
 
           {/* Category Tabs (shown when not in recycle bin) */}

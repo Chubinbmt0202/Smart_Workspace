@@ -4,13 +4,13 @@ export interface UserPopoverProps {
   userName?: string;
   userAvatar?: string;
   userEmail?: string;
-  onLogout?: () => void;
+  onLogout: () => void;
 }
 
 export const UserPopover: React.FC<UserPopoverProps> = ({
   userName,
   userAvatar,
-    userEmail,
+  userEmail,
   onLogout
 }) => {
   return (
@@ -30,13 +30,6 @@ export const UserPopover: React.FC<UserPopoverProps> = ({
         </div>
 
       </div>
-      {onLogout && (
-        <div className="user-actions">
-          <button className="logout-button" onClick={onLogout} type="button">
-            Logout
-          </button>
-        </div>
-      )}
     </div>
   );
 };
