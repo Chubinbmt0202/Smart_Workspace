@@ -97,14 +97,12 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   onSelectNote,
   onOpenAddModalWithDate,
 }) => {
-  // Current viewed month/year (defaults to October 2026 as in screenshot)
-  const [currentDate, setCurrentDate] = useState<Date>(() => new Date(2026, 9, 12));
+  const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth(); // 0-indexed (9 = October)
 
-  // Real "Today" reference for highlight badge
-  const todayRef = new Date(2026, 9, 12);
+  const todayRef = new Date();
 
   // Month navigation handlers
   const handlePrevMonth = () => {

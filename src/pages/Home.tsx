@@ -158,6 +158,7 @@ export function Home({ onLogout }: { onLogout: () => void }) {
             notifications={notifications}
             todayNotes={todayNotes}
             todayNotesCount={todayNotesCount}
+            onSelectNote={setSelectedNote}
             isNotificationsOpen={isNotificationsOpen}
             isUserPopoverOpen={isUserPopoverOpen}
             onToggleNotifications={handleToggleNotifications}
