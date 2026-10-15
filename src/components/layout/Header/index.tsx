@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from "react";
 import { Search, Bell } from "lucide-react";
 import type { NotificationItem, NoteItem } from "../../../types/note";
+import type { TagItem } from "../../../types/tag";
 import { NotificationPopover } from "./NotificationPopover";
 import { UserPopover } from "./UserPopover";
 
@@ -21,6 +22,7 @@ export interface HeaderProps {
   todayNotes?: NoteItem[];
   todayNotesCount?: number;
   onSelectNote?: (note: NoteItem) => void;
+  tags?: TagItem[];
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -40,6 +42,7 @@ export const Header: React.FC<HeaderProps> = ({
   todayNotes = [],
   todayNotesCount = 0,
   onSelectNote,
+  tags = [],
 }) => {
   const notificationWrapperRef = useRef<HTMLDivElement>(null);
   const userPopoverRef = useRef<HTMLDivElement>(null);
@@ -118,6 +121,7 @@ export const Header: React.FC<HeaderProps> = ({
               todayNotesCount={todayNotesCount}
               onClose={onCloseNotifications}
               onSelectNote={onSelectNote}
+              tags={tags}
             />
           )}
         </div>

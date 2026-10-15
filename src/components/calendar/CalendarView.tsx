@@ -6,12 +6,15 @@ import {
   Paperclip,
 } from 'lucide-react';
 import type { NoteItem } from '../../types/note';
+import type { TagItem } from '../../types/tag';
+import { getTagColor, getTagColorClass } from '../../utils/tagColor';
 
 export interface CalendarViewProps {
   notes: NoteItem[];
   onSelectNote: (note: NoteItem) => void;
   onOpenAddModalWithDate?: (date: { day: number; month: number; year: number }) => void;
   onSwitchToGrid?: () => void;
+  tags?: TagItem[];
 }
 
 const MONTH_NAMES = [
@@ -96,6 +99,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   notes,
   onSelectNote,
   onOpenAddModalWithDate,
+  tags = [],
 }) => {
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
 
@@ -220,14 +224,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     });
   }
 
-  const getChipTagClass = (note: NoteItem) => {
-    const tagLower = (note.tag || '').toLowerCase();
-    if (tagLower === 'personal' || note.tagType === 'personal') return 'tag-personal';
-    if (tagLower === 'projects' || note.tagType === 'projects') return 'tag-projects';
-    if (tagLower === 'business') return 'tag-business';
-    return 'tag-custom';
-  };
-
   return (
     <div className="calendar-wrapper">
       <div className="cal-top-bar">
@@ -312,28 +308,36 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
             {/* List of notes for this day */}
             <div className="cal-events-container">
-              {cell.notes.map((note) => (
-                <div
-                  key={note.id}
-                  className={`cal-note-chip ${getChipTagClass(note)}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSelectNote(note);
-                  }}
-                  title={`${note.title}${note.reminder?.time ? ' (' + note.reminder.time + ')' : ''
-                    }`}
-                >
-                  {note.reminder?.time && (
-                    <span className="cal-chip-time">
-                      {note.reminder.time}
-                    </span>
-                  )}
-                  <span className="cal-chip-title">{note.title}</span>
-                  {note.attachmentCount && note.attachmentCount > 0 ? (
-                    <Paperclip size={11} className="cal-chip-clip" />
-                  ) : null}
-                </div>
-              ))}
+              {cell.notes.map((note) => {
+                const tagColor = getTagColor(note.tag, tags);
+
+                return (
+                  <div
+                    key={note.id}
+                    className={`cal-note-chip ${getTagColorClass(note.tag)}`}
+                    style={tagColor ? {
+                      backgroundColor: `color-mix(in srgb, ${tagColor} 16%, white)`,
+                      borderLeftColor: tagColor
+                    } : undefined}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelectNote(note);
+                    }}
+                    title={`${note.title}${note.reminder?.time ? ' (' + note.reminder.time + ')' : ''
+                      }`}
+                  >
+                    {note.reminder?.time && (
+                      <span className="cal-chip-time">
+                        {note.reminder.time}
+                      </span>
+                    )}
+                    <span className="cal-chip-title">{note.title}</span>
+                    {note.attachmentCount && note.attachmentCount > 0 ? (
+                      <Paperclip size={11} className="cal-chip-clip" />
+                    ) : null}
+                  </div>
+                );
+              })}
             </div>
           </div>
         ))}

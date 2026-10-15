@@ -8,6 +8,8 @@ import {
   Search,
 } from 'lucide-react';
 import type { NoteItem } from '../../types/note';
+import type { TagItem } from '../../types/tag';
+import { getTagColor, getTagColorClass } from '../../utils/tagColor';
 import { RecycleGridSkeleton } from './RecycleCardSkeleton';
 
 export interface RecycleBinViewProps {
@@ -17,6 +19,7 @@ export interface RecycleBinViewProps {
   onPermanentDeleteNote: (id: string) => void;
   onEmptyRecycleBin: () => void;
   onSelectNote?: (note: NoteItem) => void;
+  tags?: TagItem[];
 }
 
 /**
@@ -81,7 +84,8 @@ export const RecycleBinView: React.FC<RecycleBinViewProps> = ({
   onRestoreNote,
   onPermanentDeleteNote,
   onEmptyRecycleBin: _onEmptyRecycleBin,
-  onSelectNote
+  onSelectNote,
+  tags = []
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -107,12 +111,6 @@ export const RecycleBinView: React.FC<RecycleBinViewProps> = ({
     }
   };
 
-  const getTagClass = (tagType?: string) => {
-    if (tagType === 'personal') return 'tag-personal';
-    if (tagType === 'projects') return 'tag-projects';
-    return 'tag-custom';
-  };
-
   return (
     <div className="recycle-wrapper">
 
@@ -133,7 +131,10 @@ export const RecycleBinView: React.FC<RecycleBinViewProps> = ({
               >
                 {/* Top strip: Tag & Days Deleted Badge */}
                 <div className="recycle-card-header">
-                  <span className={`card-tag ${getTagClass(note.tagType)}`}>
+                  <span
+                    className={`card-tag ${getTagColorClass(note.tag)}`}
+                    style={{ backgroundColor: getTagColor(note.tag, tags) }}
+                  >
                     {note.tag}
                   </span>
 

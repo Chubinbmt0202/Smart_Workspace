@@ -1,19 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MoreVertical, Paperclip, Clock, Trash2, Edit2, Pin } from 'lucide-react';
 import type { NoteItem } from '../../types/note';
+import type { TagItem } from '../../types/tag';
+import { getTagColor, getTagColorClass } from '../../utils/tagColor';
 
 export interface NoteCardProps {
   note: NoteItem;
   onDeleteNote: (id: string) => void;
   onAddTagClick?: (note: NoteItem) => void;
   onClick?: (note: NoteItem) => void;
+  tags?: TagItem[];
 }
 
 export const NoteCard: React.FC<NoteCardProps> = ({
   note,
   onDeleteNote,
   onAddTagClick,
-  onClick
+  onClick,
+  tags = []
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -31,12 +35,6 @@ export const NoteCard: React.FC<NoteCardProps> = ({
       document.removeEventListener('mousedown', handleOutsideClick);
     };
   }, [menuOpen]);
-
-  const getTagClass = () => {
-    if (note.tagType === 'personal') return 'tag-personal';
-    if (note.tagType === 'projects') return 'tag-projects';
-    return 'tag-custom';
-  };
 
   const handleCardClick = (e: React.MouseEvent) => {
     // If clicking inside menu dropdown or options button, ignore
@@ -56,14 +54,17 @@ export const NoteCard: React.FC<NoteCardProps> = ({
       {/* Top Row: Tag & More Options */}
       <div className="card-top-row">
         <span
-          className={`card-tag ${getTagClass()}`}
+          className={`card-tag ${getTagColorClass(note.tag)}`}
           onClick={(e) => {
             if (note.tagType === 'custom' && onAddTagClick) {
               e.stopPropagation();
               onAddTagClick(note);
             }
           }}
-          style={{ cursor: note.tagType === 'custom' ? 'pointer' : 'default' }}
+          style={{
+            backgroundColor: getTagColor(note.tag, tags),
+            cursor: note.tagType === 'custom' ? 'pointer' : 'default'
+          }}
         >
           {note.tag}
         </span>

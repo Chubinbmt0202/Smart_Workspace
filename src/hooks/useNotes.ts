@@ -445,25 +445,63 @@ export function useNotes() {
 
   // Xóa tag (DELETE /tags/:id)
   const handleDeleteTag = useCallback(async (tagId: string) => {
+    const tagToDelete = tags.find((tag) => tag.id === tagId);
+    const deletedTagLabel = tagToDelete?.label.trim().toLowerCase();
+    const notesToUntag = deletedTagLabel
+      ? notes.filter((note) => note.tag.trim().toLowerCase() === deletedTagLabel)
+      : [];
+
     setIsMutating(true);
     try {
+      const updateResults = await Promise.allSettled(
+        notesToUntag.map((note) =>
+          noteApi.updateNote(note.id, {
+            title: note.title,
+            content: note.content,
+            category: 'Chưa gắn tag',
+            tag_id: null
+          })
+        )
+      );
+      const failedUpdates = updateResults.filter(
+        (result) => result.status === 'rejected'
+      );
+
+      if (failedUpdates.length > 0) {
+        console.error(
+          `Failed to untag ${failedUpdates.length} note(s); the tag was not deleted.`,
+          failedUpdates
+        );
+        await loadNotes(false);
+        return;
+      }
+
       await noteApi.deleteTag(tagId);
+
+      const untagNote = (note: NoteItem): NoteItem =>
+        note.tag.trim().toLowerCase() === deletedTagLabel
+          ? { ...note, tag: 'Chưa gắn tag', tagType: 'custom' }
+          : note;
+
+      setNotes((prev) => prev.map(untagNote));
+      setDeletedNotes((prev) => prev.map(untagNote));
+      setSelectedNote((prev) => (prev ? untagNote(prev) : prev));
+
+      if (
+        tagToDelete &&
+        activeCategory.toLowerCase() === tagToDelete.label.toLowerCase()
+      ) {
+        setActiveCategory('All');
+      }
+
+      setTags((prev) => prev.filter((tag) => tag.id !== tagId));
     } catch (err) {
       console.error('Failed to delete tag via API:', err);
+      await loadNotes(false);
     } finally {
       setIsMutating(false);
-      setTags((prev) => {
-        const tagToDelete = prev.find((t) => t.id === tagId);
-        if (
-          tagToDelete &&
-          activeCategory.toLowerCase() === tagToDelete.label.toLowerCase()
-        ) {
-          setActiveCategory('All');
-        }
-        return prev.filter((t) => t.id !== tagId);
-      });
     }
-  }, [activeCategory]);
+  }, [activeCategory, loadNotes, notes, setSelectedNote, tags]);
 
   // Cập nhật tên tag (PUT /tags/:id)
   const handleRenameTag = useCallback(async (tagId: string, newName: string) => {

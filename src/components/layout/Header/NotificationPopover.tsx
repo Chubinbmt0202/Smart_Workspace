@@ -1,6 +1,8 @@
 import React from 'react';
 import { Bell, Calendar } from 'lucide-react';
 import type { NotificationItem, NoteItem } from '../../../types/note';
+import type { TagItem } from '../../../types/tag';
+import { getTagColor, getTagColorClass } from '../../../utils/tagColor';
 
 export interface NotificationPopoverProps {
   notifications?: NotificationItem[];
@@ -9,6 +11,7 @@ export interface NotificationPopoverProps {
   onClose?: () => void;
   onClearNotification?: (id: string) => void;
   onSelectNote?: (note: NoteItem) => void;
+  tags?: TagItem[];
 }
 
 export const NotificationPopover: React.FC<NotificationPopoverProps> = ({
@@ -17,7 +20,8 @@ export const NotificationPopover: React.FC<NotificationPopoverProps> = ({
   todayNotesCount,
   onClose,
   onClearNotification,
-  onSelectNote
+  onSelectNote,
+  tags = []
 }) => {
   const normalNotifications = notifications.filter((n) => !n.isOverdue);
   const overdueNotifications = notifications.filter((n) => n.isOverdue);
@@ -46,13 +50,6 @@ export const NotificationPopover: React.FC<NotificationPopoverProps> = ({
             </div>
             <div className="notification-list">
               {todayNotes.map((note) => {
-                const dotColor =
-                  note.tagType === 'personal'
-                    ? '#faa738'
-                    : note.tagType === 'projects'
-                      ? '#3e7bfa'
-                      : '#7b61ff';
-
                 return (
                   <div
                     key={note.id}
@@ -64,8 +61,8 @@ export const NotificationPopover: React.FC<NotificationPopoverProps> = ({
                     title="Bấm để xem chi tiết ghi chú"
                   >
                     <div
-                      className="notif-dot"
-                      style={{ backgroundColor: dotColor }}
+                      className={`notif-dot ${getTagColorClass(note.tag)}`}
+                      style={{ backgroundColor: getTagColor(note.tag, tags) }}
                     />
                     <div className="notif-content">
                       <div className="notif-top-row">

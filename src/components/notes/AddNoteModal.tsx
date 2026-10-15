@@ -180,11 +180,8 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
     setUploadedFiles([]);
   };
 
-  // Build unique tag options
-  const baseTagNames = ['Personal', 'Projects', 'Business'];
   const allTagNames = Array.from(
     new Set([
-      ...baseTagNames,
       ...availableTags.map((t) => t.label)
     ])
   );
@@ -233,7 +230,7 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
           <div className="form-group">
             <label htmlFor="note-category">
               <TagIcon size={14} />
-              Thẻ / Danh mục (Tag)
+              Tag
             </label>
             <select
               id="note-category"

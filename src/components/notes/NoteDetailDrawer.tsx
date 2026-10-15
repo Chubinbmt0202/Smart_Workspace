@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import type { NoteItem } from '../../types/note';
 import type { TagItem } from '../../types/tag';
+import { getTagColor, getTagColorClass } from '../../utils/tagColor';
 
 export interface NoteDetailDrawerProps {
   note: NoteItem | null;
@@ -171,12 +172,6 @@ export const NoteDetailDrawer: React.FC<NoteDetailDrawerProps> = ({
     return <File size={18} className="attachment-icon file" />;
   };
 
-  const getTagBadgeStyle = () => {
-    if (tag === 'Personal') return { backgroundColor: '#faa738', color: '#fff' };
-    if (tag === 'Projects') return { backgroundColor: '#3e7bfa', color: '#fff' };
-    if (tag === 'Business') return { backgroundColor: '#ef4444', color: '#fff' };
-    return { backgroundColor: '#8b5cf6', color: '#fff' };
-  };
   const allTagNames = Array.from(
     new Set([
       ...availableTags.map((t) => t.label)
@@ -198,7 +193,10 @@ export const NoteDetailDrawer: React.FC<NoteDetailDrawerProps> = ({
         {/* Header */}
         <div className="drawer-header">
           <div className="drawer-header-left">
-            <span className="drawer-tag-badge" style={getTagBadgeStyle()}>
+            <span
+              className={`drawer-tag-badge ${getTagColorClass(tag)}`}
+              style={{ backgroundColor: getTagColor(tag, availableTags) }}
+            >
               <Tag size={12} />
               <span>{tag}</span>
             </span>

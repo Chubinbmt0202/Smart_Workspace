@@ -206,17 +206,21 @@
   color: #ffffff;
 }
 
+.tag-business {
+  background-color: #ef4444;
+  color: #ffffff;
+}
+
 .tag-custom {
-  background-color: transparent;
-  border: 1.5px dashed var(--color-border-dashed);
-  color: var(--color-text-muted);
+  background-color: #8b5cf6;
+  color: #ffffff;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .tag-custom:hover {
-  border-color: var(--color-primary-blue);
-  color: var(--color-primary-blue);
+  background-color: #7c3aed;
+  color: #ffffff;
 }
 
 .card-options-btn {
@@ -546,4 +550,3 @@
     background-position: -200% 0;
   }
 }
-

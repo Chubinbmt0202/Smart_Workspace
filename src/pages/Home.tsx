@@ -159,6 +159,7 @@ export function Home({ onLogout }: { onLogout: () => void }) {
             todayNotes={todayNotes}
             todayNotesCount={todayNotesCount}
             onSelectNote={setSelectedNote}
+            tags={tags}
             isNotificationsOpen={isNotificationsOpen}
             isUserPopoverOpen={isUserPopoverOpen}
             onToggleNotifications={handleToggleNotifications}
@@ -193,6 +194,7 @@ export function Home({ onLogout }: { onLogout: () => void }) {
               onPermanentDeleteNote={handlePermanentDeleteNote}
               onEmptyRecycleBin={handleEmptyRecycleBin}
               onSelectNote={setSelectedNote}
+              tags={tags}
             />
           ) : viewMode === 'calendar' ? (
             <CalendarView
@@ -200,6 +202,7 @@ export function Home({ onLogout }: { onLogout: () => void }) {
               onSelectNote={setSelectedNote}
               onOpenAddModalWithDate={handleOpenAddModalWithDate}
               onSwitchToGrid={() => setViewMode('grid')}
+              tags={tags}
             />
           ) : isLoading ? (
             <NotesGridSkeleton count={6} />
@@ -211,6 +214,7 @@ export function Home({ onLogout }: { onLogout: () => void }) {
                   note={note}
                   onClick={setSelectedNote}
                   onDeleteNote={handleDeleteNote}
+                  tags={tags}
                 />
               ))}
             </div>
