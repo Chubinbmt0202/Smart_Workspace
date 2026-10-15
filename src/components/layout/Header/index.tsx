@@ -20,6 +20,7 @@ export interface HeaderProps {
   userEmail?: string;
   onLogout: () => void;
   todayNotes?: NoteItem[];
+  overdueNotes?: NoteItem[];
   todayNotesCount?: number;
   onSelectNote?: (note: NoteItem) => void;
   tags?: TagItem[];
@@ -40,6 +41,7 @@ export const Header: React.FC<HeaderProps> = ({
   userEmail,
   onLogout,
   todayNotes = [],
+  overdueNotes = [],
   todayNotesCount = 0,
   onSelectNote,
   tags = [],
@@ -118,6 +120,7 @@ export const Header: React.FC<HeaderProps> = ({
             <NotificationPopover
               notifications={notifications}
               todayNotes={todayNotes}
+              overdueNotes={overdueNotes}
               todayNotesCount={todayNotesCount}
               onClose={onCloseNotifications}
               onSelectNote={onSelectNote}

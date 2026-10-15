@@ -22,6 +22,70 @@ export function getReminderFromDayNotice(
   };
 }
 
+function getNoteReminderDate(note: NoteItem, now: Date): Date | null {
+  if (note.day_notice) {
+    const date = new Date(note.day_notice);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  const reminderDay = note.reminder?.day?.trim().toLowerCase();
+  const reminderTime = note.reminder?.time?.replace('.', ':');
+  const timeParts = reminderTime?.match(/^(\d{1,2}):(\d{2})$/);
+  if (!timeParts) return null;
+
+  const hours = Number(timeParts[1]);
+  const minutes = Number(timeParts[2]);
+  if (hours > 23 || minutes > 59) return null;
+
+  if (reminderDay === 'today' || reminderDay === 'hôm nay') {
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
+  }
+
+  const dateParts = reminderDay?.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+  if (!dateParts) return null;
+
+  const date = new Date(
+    Number(dateParts[3]),
+    Number(dateParts[2]) - 1,
+    Number(dateParts[1]),
+    hours,
+    minutes
+  );
+  if (
+    date.getFullYear() !== Number(dateParts[3]) ||
+    date.getMonth() !== Number(dateParts[2]) - 1 ||
+    date.getDate() !== Number(dateParts[1])
+  ) {
+    return null;
+  }
+  return date;
+}
+
+export function getNoteReminderStatus(
+  note: NoteItem,
+  now = new Date()
+): 'today' | 'overdue' | null {
+  const reminderDate = getNoteReminderDate(note, now);
+  if (!reminderDate) return null;
+
+  const reminderDay = new Date(
+    reminderDate.getFullYear(),
+    reminderDate.getMonth(),
+    reminderDate.getDate()
+  ).getTime();
+  const currentDay = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate()
+  ).getTime();
+
+  if (reminderDay === currentDay) {
+    return reminderDate.getTime() < now.getTime() ? 'overdue' : 'today';
+  }
+  if (reminderDay < currentDay) return 'overdue';
+  return null;
+}
+
 /**
  * Parses a note date string into day, month, year numbers.
  * Supported formats: DD.MM.YYYY, DD/MM/YYYY, YYYY-MM-DD

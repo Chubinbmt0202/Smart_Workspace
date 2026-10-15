@@ -7,6 +7,7 @@ import { getTagColor, getTagColorClass } from '../../../utils/tagColor';
 export interface NotificationPopoverProps {
   notifications?: NotificationItem[];
   todayNotes?: NoteItem[];
+  overdueNotes?: NoteItem[];
   todayNotesCount?: number;
   onClose?: () => void;
   onClearNotification?: (id: string) => void;
@@ -17,6 +18,7 @@ export interface NotificationPopoverProps {
 export const NotificationPopover: React.FC<NotificationPopoverProps> = ({
   notifications = [],
   todayNotes = [],
+  overdueNotes = [],
   todayNotesCount,
   onClose,
   onClearNotification,
@@ -106,12 +108,39 @@ export const NotificationPopover: React.FC<NotificationPopoverProps> = ({
         )}
 
         {/* Overdue Section */}
-        {overdueNotifications.length > 0 && (
+        {(overdueNotes.length > 0 || overdueNotifications.length > 0) && (
           <div className="notif-section">
             <div className="notif-section-title notif-overdue-title">
-              <span>Bỏ lỡ</span>
+              <span>Bỏ lỡ ({overdueNotes.length + overdueNotifications.length})</span>
             </div>
             <div className="notification-list">
+              {overdueNotes.map((note) => (
+                <div
+                  key={note.id}
+                  className="notification-item note-today-item"
+                  onClick={() => {
+                    onSelectNote?.(note);
+                    onClose?.();
+                  }}
+                  title="Bấm để xem chi tiết ghi chú đã quá giờ nhắc"
+                >
+                  <div
+                    className={`notif-dot ${getTagColorClass(note.tag)}`}
+                    style={{ backgroundColor: getTagColor(note.tag, tags) }}
+                  />
+                  <div className="notif-content">
+                    <div className="notif-top-row">
+                      <span className="notif-title">{note.title}</span>
+                      <span className="notif-date">
+                        {note.reminder?.time
+                          ? `${note.reminder.time} · ${note.reminder.day}`
+                          : note.date}
+                      </span>
+                    </div>
+                    <p className="notif-subtitle">{note.content}</p>
+                  </div>
+                </div>
+              ))}
               {overdueNotifications.map((item) => (
                 <div
                   key={item.id}
@@ -137,6 +166,7 @@ export const NotificationPopover: React.FC<NotificationPopoverProps> = ({
 
         {/* Empty state when there are no notes today and no notifications */}
         {todayNotes.length === 0 &&
+          overdueNotes.length === 0 &&
           normalNotifications.length === 0 &&
           overdueNotifications.length === 0 && (
             <div className="notif-empty">

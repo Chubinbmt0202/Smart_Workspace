@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Sidebar,
   Header,
@@ -13,17 +13,18 @@ import {
 } from '../components';
 import { SuccessToast } from '../components/SuccessToast';
 import { useNotes } from '../hooks/useNotes';
-import { INITIAL_NOTIFICATIONS, USER_PROFILE } from '../data/mockNotes';
-import { isNoteToday } from '../utils/date';
+import { USER_PROFILE } from '../data/mockNotes';
+import { getNoteReminderStatus } from '../utils/date';
 import type { NotificationItem } from '../types';
 
 export function Home({ onLogout }: { onLogout: () => void }) {
+  const [currentTime, setCurrentTime] = useState(() => new Date());
   const [sidebarTab, setSidebarTab] = useState<string>('all-inboxes');
   const [viewMode, setViewMode] = useState<'grid' | 'calendar'>('grid');
   const [modalInitialDate, setModalInitialDate] = useState<
     { day: number; month: number; year: number } | undefined
   >(undefined);
-  const [notifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+  const [notifications] = useState<NotificationItem[]>([]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
   const [isUserPopoverOpen, setIsUserPopoverOpen] = useState<boolean>(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
@@ -56,7 +57,19 @@ export function Home({ onLogout }: { onLogout: () => void }) {
     handleRenameTag
   } = useNotes();
 
-  const todayNotes = useMemo(() => notes.filter(isNoteToday), [notes]);
+  useEffect(() => {
+    const intervalId = window.setInterval(() => setCurrentTime(new Date()), 30_000);
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  const todayNotes = useMemo(
+    () => notes.filter((note) => getNoteReminderStatus(note, currentTime) === 'today'),
+    [notes, currentTime]
+  );
+  const overdueNotes = useMemo(
+    () => notes.filter((note) => getNoteReminderStatus(note, currentTime) === 'overdue'),
+    [notes, currentTime]
+  );
   const todayNotesCount = todayNotes.length;
 
   const handleToggleNotifications = () => {
@@ -160,6 +173,7 @@ export function Home({ onLogout }: { onLogout: () => void }) {
             onSearchChange={setSearchQuery}
             notifications={notifications}
             todayNotes={todayNotes}
+            overdueNotes={overdueNotes}
             todayNotesCount={todayNotesCount}
             onSelectNote={setSelectedNote}
             tags={tags}
