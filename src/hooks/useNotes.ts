@@ -12,8 +12,14 @@ export function useNotes() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedNote, setSelectedNote] = useState<NoteItem | null>(null);
 
+  // Loading states cho API Skeleton và hiệu ứng tải
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoadingTrash, setIsLoadingTrash] = useState<boolean>(false);
+  const [isMutating, setIsMutating] = useState<boolean>(false);
+
   // Load danh sách ghi chú từ API
-  const loadNotes = useCallback(async () => {
+  const loadNotes = useCallback(async (showLoading = true) => {
+    if (showLoading) setIsLoading(true);
     try {
       const res = await noteApi.getAllNote();
       const rawList = (res && res.data) ? res.data : (Array.isArray(res) ? res : []);
@@ -45,6 +51,8 @@ export function useNotes() {
       setNotes(formattedNotes);
     } catch (err) {
       console.error('Failed to load notes:', err);
+    } finally {
+      if (showLoading) setIsLoading(false);
     }
   }, []);
 
@@ -68,7 +76,8 @@ export function useNotes() {
   }, []);
 
   // Load danh sách trong thùng rác từ API
-  const loadTrash = useCallback(async () => {
+  const loadTrash = useCallback(async (showLoading = true) => {
+    if (showLoading) setIsLoadingTrash(true);
     try {
       const res = await noteApi.getTrashNotes();
       const rawList = (res && res.data) ? res.data : (Array.isArray(res) ? res : []);
@@ -103,13 +112,15 @@ export function useNotes() {
       setDeletedNotes(formattedTrash);
     } catch (err) {
       console.error('Failed to load trash:', err);
+    } finally {
+      if (showLoading) setIsLoadingTrash(false);
     }
   }, []);
 
   useEffect(() => {
-    loadNotes();
+    loadNotes(true);
     loadTags();
-    loadTrash();
+    loadTrash(false);
   }, [loadNotes, loadTags, loadTrash]);
 
   // Helper to ensure a tag exists in the tags collection
@@ -153,7 +164,6 @@ export function useNotes() {
       }
     });
 
-    // Also include any unique tags present in existing notes that might not be in tags list
     notes.forEach((n) => {
       let rawTag = typeof n.tag === 'object' && n.tag !== null
         ? ((n.tag as any).name || (n.tag as any).label || '')
@@ -223,6 +233,7 @@ export function useNotes() {
 
   // Cập nhật ghi chú (PUT /notes/:id)
   const handleUpdateNote = useCallback(async (updatedNote: NoteItem) => {
+    setIsMutating(true);
     try {
       const matchedTag = tags.find(
         (t) => t.label.toLowerCase() === updatedNote.tag?.toLowerCase()
@@ -239,6 +250,7 @@ export function useNotes() {
     } catch (err) {
       console.error('Failed to update note via API:', err);
     } finally {
+      setIsMutating(false);
       setNotes((prev) =>
         prev.map((n) => (n.id === updatedNote.id ? updatedNote : n))
       );
@@ -251,6 +263,7 @@ export function useNotes() {
 
   // Tạo mới ghi chú (POST /notes)
   const handleAddNote = useCallback(async (newNote: NoteItem) => {
+    setIsMutating(true);
     try {
       const matchedTag = tags.find(
         (t) => t.label.toLowerCase() === newNote.tag?.toLowerCase()
@@ -285,6 +298,8 @@ export function useNotes() {
       if (newNote.tag) {
         ensureTagExists(newNote.tag);
       }
+    } finally {
+      setIsMutating(false);
     }
   }, [ensureTagExists, tags]);
 
@@ -295,9 +310,10 @@ export function useNotes() {
     setNotes((prev) => prev.filter((n) => n.id !== id));
     setSelectedNote((prevSelected) => (prevSelected?.id === id ? null : prevSelected));
 
+    setIsMutating(true);
     try {
       await noteApi.moveToTrash(id);
-      await loadTrash();
+      await loadTrash(false);
     } catch (err) {
       console.error('Failed to move note to trash via API:', err);
       if (targetNote) {
@@ -307,6 +323,8 @@ export function useNotes() {
         };
         setDeletedNotes((prevDel) => [deletedNote, ...prevDel]);
       }
+    } finally {
+      setIsMutating(false);
     }
   }, [notes, loadTrash]);
 
@@ -318,9 +336,10 @@ export function useNotes() {
     // Optimistic update
     setDeletedNotes((prevDel) => prevDel.filter((n) => n.id !== id && n.trashId !== id));
 
+    setIsMutating(true);
     try {
       await noteApi.restoreNoteFromTrash(trashIdToRestore);
-      await loadNotes();
+      await loadNotes(false);
     } catch (err) {
       console.error('Failed to restore note via API:', err);
       if (target) {
@@ -328,6 +347,8 @@ export function useNotes() {
         const { deletedAt: _, trashId: __, ...restoredNote } = target;
         setNotes((prevNotes) => [restoredNote, ...prevNotes]);
       }
+    } finally {
+      setIsMutating(false);
     }
   }, [deletedNotes, loadNotes]);
 
@@ -338,10 +359,13 @@ export function useNotes() {
 
     setDeletedNotes((prevDel) => prevDel.filter((n) => n.id !== id && n.trashId !== id));
 
+    setIsMutating(true);
     try {
       await noteApi.permanentlyDeleteTrashNote(trashIdToDelete);
     } catch (err) {
       console.error('Failed to permanently delete note via API:', err);
+    } finally {
+      setIsMutating(false);
     }
   }, [deletedNotes]);
 
@@ -350,6 +374,7 @@ export function useNotes() {
     const itemsToDelete = [...deletedNotes];
     setDeletedNotes([]);
 
+    setIsMutating(true);
     try {
       await Promise.all(
         itemsToDelete.map((item) =>
@@ -358,6 +383,8 @@ export function useNotes() {
       );
     } catch (err) {
       console.error('Failed to empty recycle bin via API:', err);
+    } finally {
+      setIsMutating(false);
     }
   }, [deletedNotes]);
 
@@ -370,6 +397,7 @@ export function useNotes() {
       ? newTagOrName.dotColor
       : TAG_COLOR_PALETTE[tags.length % TAG_COLOR_PALETTE.length];
 
+    setIsMutating(true);
     try {
       const res = await noteApi.createTag({ name: tagLabel, color: dotColor });
       const createdTag = res?.data || res;
@@ -410,16 +438,20 @@ export function useNotes() {
         });
         setActiveCategory(newTagOrName.label);
       }
+    } finally {
+      setIsMutating(false);
     }
   }, [tags, ensureTagExists]);
 
   // Xóa tag (DELETE /tags/:id)
   const handleDeleteTag = useCallback(async (tagId: string) => {
+    setIsMutating(true);
     try {
       await noteApi.deleteTag(tagId);
     } catch (err) {
       console.error('Failed to delete tag via API:', err);
     } finally {
+      setIsMutating(false);
       setTags((prev) => {
         const tagToDelete = prev.find((t) => t.id === tagId);
         if (
@@ -438,11 +470,13 @@ export function useNotes() {
     const trimmed = newName.trim();
     if (!trimmed) return;
 
+    setIsMutating(true);
     try {
       await noteApi.updateTag(tagId, { name: trimmed });
     } catch (err) {
       console.error('Failed to rename tag via API:', err);
     } finally {
+      setIsMutating(false);
       setTags((prev) =>
         prev.map((t) => (t.id === tagId ? { ...t, label: trimmed } : t))
       );
@@ -473,6 +507,11 @@ export function useNotes() {
     setSearchQuery,
     selectedNote,
     setSelectedNote,
+    isLoading,
+    isLoadingTrash,
+    isMutating,
+    loadNotes,
+    loadTrash,
     handleUpdateNote,
     handleAddNote,
     handleDeleteNote,

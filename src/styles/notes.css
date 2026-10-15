@@ -511,3 +511,39 @@
   color: #0f172a;
 }
 
+/* Skeleton Card States */
+.note-card-skeleton,
+.recycle-card-skeleton {
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.95;
+}
+
+.note-card-skeleton:hover,
+.recycle-card-skeleton:hover {
+  transform: none !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+/* Subtle top progress bar when calling API */
+.api-loading-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #3b82f6 0%, #6366f1 50%, #ec4899 100%);
+  background-size: 200% 100%;
+  animation: api-loading-animation 1.5s ease-in-out infinite;
+  z-index: 999;
+}
+
+@keyframes api-loading-animation {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+

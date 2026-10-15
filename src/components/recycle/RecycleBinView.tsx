@@ -8,9 +8,11 @@ import {
   Search,
 } from 'lucide-react';
 import type { NoteItem } from '../../types/note';
+import { RecycleGridSkeleton } from './RecycleCardSkeleton';
 
 export interface RecycleBinViewProps {
   deletedNotes: NoteItem[];
+  isLoading?: boolean;
   onRestoreNote: (id: string) => void;
   onPermanentDeleteNote: (id: string) => void;
   onEmptyRecycleBin: () => void;
@@ -75,8 +77,10 @@ export function getDaysSinceDeleted(deletedAt?: string): {
 
 export const RecycleBinView: React.FC<RecycleBinViewProps> = ({
   deletedNotes,
+  isLoading = false,
   onRestoreNote,
   onPermanentDeleteNote,
+  onEmptyRecycleBin: _onEmptyRecycleBin,
   onSelectNote
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -112,8 +116,10 @@ export const RecycleBinView: React.FC<RecycleBinViewProps> = ({
   return (
     <div className="recycle-wrapper">
 
-      {/* 3. Notes Grid or Empty State */}
-      {filteredDeletedNotes.length > 0 ? (
+      {/* 3. Notes Grid, Skeleton or Empty State */}
+      {isLoading ? (
+        <RecycleGridSkeleton count={4} />
+      ) : filteredDeletedNotes.length > 0 ? (
         <div className="recycle-grid">
           {filteredDeletedNotes.map((note) => {
             const { text: daysText, formattedDate, badgeClass } =

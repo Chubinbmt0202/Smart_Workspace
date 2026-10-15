@@ -8,7 +8,8 @@ import {
   EmptyState,
   NoteDetailDrawer,
   CalendarView,
-  RecycleBinView
+  RecycleBinView,
+  NotesGridSkeleton
 } from '../components';
 import { useNotes } from '../hooks/useNotes';
 import { INITIAL_NOTIFICATIONS, USER_PROFILE } from '../data/mockNotes';
@@ -38,6 +39,9 @@ export function Home({ onLogout }: { onLogout: () => void }) {
     setSearchQuery,
     selectedNote,
     setSelectedNote,
+    isLoading,
+    isLoadingTrash,
+    isMutating,
     handleUpdateNote,
     handleAddNote,
     handleDeleteNote,
@@ -142,7 +146,9 @@ export function Home({ onLogout }: { onLogout: () => void }) {
       />
 
       {/* Main Content Area */}
-      <main className="main-content">
+      <main className="main-content" style={{ position: 'relative' }}>
+        {(isMutating || isLoading) && <div className="api-loading-bar" />}
+
         {/* Fixed Top Section: Header & Category Tabs */}
         <div className="main-top-section">
           {/* Header */}
@@ -181,6 +187,7 @@ export function Home({ onLogout }: { onLogout: () => void }) {
           {sidebarTab === 'recycle' ? (
             <RecycleBinView
               deletedNotes={deletedNotes}
+              isLoading={isLoadingTrash}
               onRestoreNote={handleRestoreNote}
               onPermanentDeleteNote={handlePermanentDeleteNote}
               onEmptyRecycleBin={handleEmptyRecycleBin}
@@ -193,6 +200,8 @@ export function Home({ onLogout }: { onLogout: () => void }) {
               onOpenAddModalWithDate={handleOpenAddModalWithDate}
               onSwitchToGrid={() => setViewMode('grid')}
             />
+          ) : isLoading ? (
+            <NotesGridSkeleton count={6} />
           ) : filteredNotes.length > 0 ? (
             <div className="notes-grid">
               {filteredNotes.map((note) => (
