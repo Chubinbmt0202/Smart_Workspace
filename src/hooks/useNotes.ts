@@ -1,10 +1,15 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import type { NoteItem } from '../types/note';
 import type { TagItem } from '../types/tag';
 import { TAG_COLOR_PALETTE } from '../constants/tags';
 import { noteApi } from '../services/api';
+import { getReminderFromDayNotice } from '../utils/date';
 
 export function useNotes() {
+  const [toastNotifications, setToastNotifications] = useState<
+    { id: number; message: string; variant: 'success' | 'error' }[]
+  >([]);
+  const nextSuccessNotificationId = useRef(0);
   const [notes, setNotes] = useState<NoteItem[]>([]);
   const [deletedNotes, setDeletedNotes] = useState<NoteItem[]>([]);
   const [tags, setTags] = useState<TagItem[]>([]);
@@ -16,6 +21,20 @@ export function useNotes() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isLoadingTrash, setIsLoadingTrash] = useState<boolean>(false);
   const [isMutating, setIsMutating] = useState<boolean>(false);
+
+  const notifySuccess = useCallback((message: string) => {
+    const id = nextSuccessNotificationId.current++;
+    setToastNotifications((prev) => [...prev, { id, message, variant: 'success' }]);
+  }, []);
+
+  const notifyError = useCallback((message: string) => {
+    const id = nextSuccessNotificationId.current++;
+    setToastNotifications((prev) => [...prev, { id, message, variant: 'error' }]);
+  }, []);
+
+  const dismissSuccessNotification = useCallback(() => {
+    setToastNotifications((prev) => prev.slice(1));
+  }, []);
 
   // Load danh sách ghi chú từ API
   const loadNotes = useCallback(async (showLoading = true) => {
@@ -36,6 +55,7 @@ export function useNotes() {
         const tagLower = tagName.toLowerCase();
         const tagType: 'personal' | 'projects' | 'custom' =
           item.tagType || (tagLower === 'personal' ? 'personal' : tagLower === 'projects' ? 'projects' : 'custom');
+        const reminderFromDayNotice = getReminderFromDayNotice(item.day_notice);
 
         return {
           ...item,
@@ -44,6 +64,9 @@ export function useNotes() {
           content: item.content || '',
           tag: tagName,
           tagType,
+          reminder: reminderFromDayNotice
+            ? { ...item.reminder, ...reminderFromDayNotice }
+            : item.reminder,
           date: item.date || (item.created_at ? new Date(item.created_at).toLocaleDateString('vi-VN') : '')
         };
       });
@@ -95,6 +118,7 @@ export function useNotes() {
         const tagLower = tagName.toLowerCase();
         const tagType: 'personal' | 'projects' | 'custom' =
           orig.tagType || (tagLower === 'personal' ? 'personal' : tagLower === 'projects' ? 'projects' : 'custom');
+        const reminderFromDayNotice = getReminderFromDayNotice(orig.day_notice);
 
         return {
           ...orig,
@@ -104,6 +128,9 @@ export function useNotes() {
           content: orig.content || '',
           tag: tagName,
           tagType,
+          reminder: reminderFromDayNotice
+            ? { ...orig.reminder, ...reminderFromDayNotice }
+            : orig.reminder,
           date: orig.created_at ? new Date(orig.created_at).toLocaleDateString('vi-VN') : '',
           deletedAt: item.trashed_at || item.created_at || new Date().toISOString()
         };
@@ -244,22 +271,25 @@ export function useNotes() {
         content: updatedNote.content,
         category: updatedNote.tag || 'Personal',
         tag_id: matchedTag ? matchedTag.id : null,
+        day_notice: updatedNote.day_notice ?? null,
       };
 
       await noteApi.updateNote(updatedNote.id, payload);
-    } catch (err) {
-      console.error('Failed to update note via API:', err);
-    } finally {
-      setIsMutating(false);
       setNotes((prev) =>
-        prev.map((n) => (n.id === updatedNote.id ? updatedNote : n))
+        prev.map((note) => (note.id === updatedNote.id ? updatedNote : note))
       );
       setSelectedNote(updatedNote);
       if (updatedNote.tag) {
         ensureTagExists(updatedNote.tag);
       }
+      notifySuccess('Đã cập nhật ghi chú thành công.');
+    } catch (err) {
+      console.error('Failed to update note via API:', err);
+      notifyError('Không thể cập nhật ghi chú. Thay đổi chưa được lưu lên máy chủ.');
+    } finally {
+      setIsMutating(false);
     }
-  }, [ensureTagExists, tags]);
+  }, [ensureTagExists, notifyError, notifySuccess, setSelectedNote, tags]);
 
   // Tạo mới ghi chú (POST /notes)
   const handleAddNote = useCallback(async (newNote: NoteItem) => {
@@ -274,9 +304,11 @@ export function useNotes() {
         content: newNote.content,
         category: newNote.tag || 'Personal',
         tag_id: matchedTag ? matchedTag.id : null,
+        day_notice: newNote.day_notice ?? null,
       };
 
       const res = await noteApi.createNote(payload);
+      notifySuccess('Đã tạo ghi chú thành công.');
       const created = res?.data || res;
       const createdId = created?.id ? String(created.id) : newNote.id;
 
@@ -294,6 +326,7 @@ export function useNotes() {
       }
     } catch (err) {
       console.error('Failed to create note via API:', err);
+      notifyError('Không thể tạo ghi chú trên máy chủ. Ghi chú hiện chỉ được lưu tạm thời.');
       setNotes((prev) => [newNote, ...prev]);
       if (newNote.tag) {
         ensureTagExists(newNote.tag);
@@ -301,7 +334,7 @@ export function useNotes() {
     } finally {
       setIsMutating(false);
     }
-  }, [ensureTagExists, tags]);
+  }, [ensureTagExists, notifyError, notifySuccess, tags]);
 
   // Đưa vào thùng rác (PATCH /notes/:id/trash)
   const handleDeleteNote = useCallback(async (id: string) => {
@@ -314,19 +347,17 @@ export function useNotes() {
     try {
       await noteApi.moveToTrash(id);
       await loadTrash(false);
+      notifySuccess('Đã chuyển ghi chú vào thùng rác.');
     } catch (err) {
       console.error('Failed to move note to trash via API:', err);
+      notifyError('Không thể chuyển ghi chú vào thùng rác trên máy chủ.');
       if (targetNote) {
-        const deletedNote: NoteItem = {
-          ...targetNote,
-          deletedAt: new Date().toISOString()
-        };
-        setDeletedNotes((prevDel) => [deletedNote, ...prevDel]);
+        setNotes((prev) => [targetNote, ...prev]);
       }
     } finally {
       setIsMutating(false);
     }
-  }, [notes, loadTrash]);
+  }, [notes, loadTrash, notifyError, notifySuccess]);
 
   // Khôi phục từ thùng rác (POST /trash/:id/restore)
   const handleRestoreNote = useCallback(async (id: string) => {
@@ -340,17 +371,17 @@ export function useNotes() {
     try {
       await noteApi.restoreNoteFromTrash(trashIdToRestore);
       await loadNotes(false);
+      notifySuccess('Đã khôi phục ghi chú thành công.');
     } catch (err) {
       console.error('Failed to restore note via API:', err);
+      notifyError('Không thể khôi phục ghi chú trên máy chủ.');
       if (target) {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { deletedAt: _, trashId: __, ...restoredNote } = target;
-        setNotes((prevNotes) => [restoredNote, ...prevNotes]);
+        setDeletedNotes((prev) => [target, ...prev]);
       }
     } finally {
       setIsMutating(false);
     }
-  }, [deletedNotes, loadNotes]);
+  }, [deletedNotes, loadNotes, notifyError, notifySuccess]);
 
   // Xóa vĩnh viễn 1 mục khỏi thùng rác (DELETE /trash/:id)
   const handlePermanentDeleteNote = useCallback(async (id: string) => {
@@ -362,31 +393,60 @@ export function useNotes() {
     setIsMutating(true);
     try {
       await noteApi.permanentlyDeleteTrashNote(trashIdToDelete);
+      notifySuccess('Đã xóa ghi chú vĩnh viễn.');
     } catch (err) {
       console.error('Failed to permanently delete note via API:', err);
+      notifyError('Không thể xóa ghi chú vĩnh viễn trên máy chủ.');
+      if (target) {
+        setDeletedNotes((prev) => [target, ...prev]);
+      }
     } finally {
       setIsMutating(false);
     }
-  }, [deletedNotes]);
+  }, [deletedNotes, notifyError, notifySuccess]);
 
   // Dọn sạch thùng rác
   const handleEmptyRecycleBin = useCallback(async () => {
     const itemsToDelete = [...deletedNotes];
-    setDeletedNotes([]);
+    if (itemsToDelete.length === 0) return;
 
     setIsMutating(true);
-    try {
-      await Promise.all(
-        itemsToDelete.map((item) =>
-          noteApi.permanentlyDeleteTrashNote(item.trashId || item.id)
-        )
+    const results = await Promise.allSettled(
+      itemsToDelete.map((item) =>
+        noteApi.permanentlyDeleteTrashNote(item.trashId || item.id)
+      )
+    );
+    const failedIds = new Set(
+      results.flatMap((result, index) =>
+        result.status === 'rejected'
+          ? [itemsToDelete[index].trashId || itemsToDelete[index].id]
+          : []
+      )
+    );
+    const failedItems = itemsToDelete.filter((item) =>
+      failedIds.has(item.trashId || item.id)
+    );
+
+    if (failedItems.length === 0) {
+      notifySuccess('Đã dọn sạch thùng rác.');
+    } else {
+      console.error(
+        `Failed to permanently delete ${failedItems.length} note(s) while emptying the recycle bin.`,
+        results.filter((result) => result.status === 'rejected')
       );
-    } catch (err) {
-      console.error('Failed to empty recycle bin via API:', err);
-    } finally {
-      setIsMutating(false);
+      notifyError('Không thể xóa một số ghi chú. Các ghi chú đó vẫn ở trong thùng rác.');
     }
-  }, [deletedNotes]);
+    setDeletedNotes((prev) => {
+      const remainingIds = new Set(prev.map((note) => note.trashId || note.id));
+      return [
+        ...prev,
+        ...failedItems.filter(
+          (note) => !remainingIds.has(note.trashId || note.id)
+        )
+      ];
+    });
+    setIsMutating(false);
+  }, [deletedNotes, notifyError, notifySuccess]);
 
   // Thêm tag mới (POST /tags)
   const handleAddTag = useCallback(async (newTagOrName: TagItem | string) => {
@@ -418,8 +478,10 @@ export function useNotes() {
         return [...prev, newTagItem];
       });
       setActiveCategory(tagLabel);
+      notifySuccess(`Đã tạo tag "${tagLabel}" thành công.`);
     } catch (err) {
       console.error('Failed to create tag via API:', err);
+      notifyError(`Không thể tạo tag "${tagLabel}" trên máy chủ.`);
       if (typeof newTagOrName === 'string') {
         ensureTagExists(tagLabel);
         setActiveCategory(tagLabel);
@@ -441,7 +503,7 @@ export function useNotes() {
     } finally {
       setIsMutating(false);
     }
-  }, [tags, ensureTagExists]);
+  }, [tags, ensureTagExists, notifyError, notifySuccess]);
 
   // Xóa tag (DELETE /tags/:id)
   const handleDeleteTag = useCallback(async (tagId: string) => {
@@ -473,6 +535,7 @@ export function useNotes() {
           failedUpdates
         );
         await loadNotes(false);
+        notifyError('Không thể gỡ tag khỏi tất cả ghi chú. Tag chưa bị xóa.');
         return;
       }
 
@@ -495,43 +558,48 @@ export function useNotes() {
       }
 
       setTags((prev) => prev.filter((tag) => tag.id !== tagId));
+      notifySuccess(`Đã xóa tag "${tagToDelete?.label ?? ''}" thành công.`);
     } catch (err) {
       console.error('Failed to delete tag via API:', err);
+      notifyError(`Không thể xóa tag "${tagToDelete?.label ?? ''}".`);
       await loadNotes(false);
     } finally {
       setIsMutating(false);
     }
-  }, [activeCategory, loadNotes, notes, setSelectedNote, tags]);
+  }, [activeCategory, loadNotes, notes, notifyError, notifySuccess, setSelectedNote, tags]);
 
   // Cập nhật tên tag (PUT /tags/:id)
   const handleRenameTag = useCallback(async (tagId: string, newName: string) => {
     const trimmed = newName.trim();
     if (!trimmed) return;
 
+    const tagToRename = tags.find((tag) => tag.id === tagId);
+    const oldLabel = tagToRename?.label.toLowerCase();
     setIsMutating(true);
     try {
       await noteApi.updateTag(tagId, { name: trimmed });
+      setTags((prev) =>
+        prev.map((tag) => (tag.id === tagId ? { ...tag, label: trimmed } : tag))
+      );
+      if (oldLabel) {
+        const renameNoteTag = (note: NoteItem): NoteItem =>
+          note.tag.toLowerCase() === oldLabel ? { ...note, tag: trimmed } : note;
+
+        setNotes((prev) => prev.map(renameNoteTag));
+        setDeletedNotes((prev) => prev.map(renameNoteTag));
+        setSelectedNote((prev) => (prev ? renameNoteTag(prev) : prev));
+      }
+      setActiveCategory((prevActive) =>
+        oldLabel && prevActive.toLowerCase() === oldLabel ? trimmed : prevActive
+      );
+      notifySuccess(`Đã đổi tên tag thành "${trimmed}".`);
     } catch (err) {
       console.error('Failed to rename tag via API:', err);
+      notifyError(`Không thể đổi tên tag thành "${trimmed}" trên máy chủ.`);
     } finally {
       setIsMutating(false);
-      setTags((prev) =>
-        prev.map((t) => (t.id === tagId ? { ...t, label: trimmed } : t))
-      );
-
-      setNotes((prev) =>
-        prev.map((n) =>
-          n.tag.toLowerCase() === tagId.toLowerCase()
-            ? { ...n, tag: trimmed }
-            : n
-        )
-      );
-
-      setActiveCategory((prevActive) =>
-        prevActive.toLowerCase() === tagId.toLowerCase() ? trimmed : prevActive
-      );
     }
-  }, []);
+  }, [notifyError, notifySuccess, setSelectedNote, tags]);
 
   return {
     notes,
@@ -548,6 +616,8 @@ export function useNotes() {
     isLoading,
     isLoadingTrash,
     isMutating,
+    toastNotifications,
+    dismissSuccessNotification,
     loadNotes,
     loadTrash,
     handleUpdateNote,

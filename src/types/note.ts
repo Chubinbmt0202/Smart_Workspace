@@ -11,6 +11,7 @@ export interface NoteItem {
   }[];
   title: string;
   content: string;
+  day_notice?: string | null;
   avatars?: {
     name: string;
     avatarUrl: string;

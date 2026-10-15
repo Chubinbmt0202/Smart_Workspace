@@ -11,6 +11,7 @@ import {
   RecycleBinView,
   NotesGridSkeleton
 } from '../components';
+import { SuccessToast } from '../components/SuccessToast';
 import { useNotes } from '../hooks/useNotes';
 import { INITIAL_NOTIFICATIONS, USER_PROFILE } from '../data/mockNotes';
 import { isNoteToday } from '../utils/date';
@@ -42,6 +43,8 @@ export function Home({ onLogout }: { onLogout: () => void }) {
     isLoading,
     isLoadingTrash,
     isMutating,
+    toastNotifications,
+    dismissSuccessNotification,
     handleUpdateNote,
     handleAddNote,
     handleDeleteNote,
@@ -256,6 +259,15 @@ export function Home({ onLogout }: { onLogout: () => void }) {
         availableTags={tags}
         onAddNewTag={handleAddTag}
       />
+
+      {toastNotifications[0] && (
+        <SuccessToast
+          key={toastNotifications[0].id}
+          message={toastNotifications[0].message}
+          variant={toastNotifications[0].variant}
+          onDismiss={dismissSuccessNotification}
+        />
+      )}
     </div>
   );
 }

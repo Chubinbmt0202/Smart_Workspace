@@ -14,6 +14,7 @@
 @import './styles/drawer.css';
 @import './styles/calendar.css';
 @import './styles/recycle.css';
+@import './styles/toast.css';
 
 .login-page {
   position: relative;

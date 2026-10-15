@@ -149,6 +149,8 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
         : finalTagLower === 'projects'
           ? 'projects'
           : 'custom';
+    const [hours, minutes] = hour.split(':').map(Number);
+    const dayNotice = new Date(year, month - 1, day, hours, minutes).toISOString();
 
     const newNote: NoteItem = {
       id: `note-${Date.now()}`,
@@ -159,6 +161,7 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
       attachments: uploadedFiles.length > 0 ? uploadedFiles : undefined,
       title: title.trim(),
       content: description.trim() || 'Không có mô tả chi tiết.',
+      day_notice: dayNotice,
       avatars: [
         {
           name: 'Josh',

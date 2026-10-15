@@ -18,6 +18,37 @@ import {
 import type { NoteItem } from '../../types/note';
 import type { TagItem } from '../../types/tag';
 import { getTagColor, getTagColorClass } from '../../utils/tagColor';
+import { parseNoteDate } from '../../utils/date';
+
+const padNumber = (value: number) => String(value).padStart(2, '0');
+
+function getReminderDateTimeValue(note: NoteItem): string {
+  const reminderDate = note.day_notice ? new Date(note.day_notice) : null;
+  let date = reminderDate && !Number.isNaN(reminderDate.getTime())
+    ? reminderDate
+    : null;
+
+  if (!date) {
+    const parsedNoteDate = parseNoteDate(note);
+    const reminderTime = note.reminder?.time?.replace('.', ':');
+    const timeParts = reminderTime?.split(':').map(Number);
+    if (parsedNoteDate) {
+      date = new Date(
+        parsedNoteDate.year,
+        parsedNoteDate.month - 1,
+        parsedNoteDate.day,
+        timeParts?.[0] ?? 9,
+        timeParts?.[1] ?? 0
+      );
+    } else {
+      date = new Date();
+    }
+  }
+
+  return `${date.getFullYear()}-${padNumber(date.getMonth() + 1)}-${padNumber(
+    date.getDate()
+  )}T${padNumber(date.getHours())}:${padNumber(date.getMinutes())}`;
+}
 
 export interface NoteDetailDrawerProps {
   note: NoteItem | null;
@@ -43,6 +74,7 @@ export const NoteDetailDrawer: React.FC<NoteDetailDrawerProps> = ({
   const [tag, setTag] = useState('');
   const [reminderDay, setReminderDay] = useState('Today');
   const [reminderTime, setReminderTime] = useState('12.00');
+  const [reminderDateTime, setReminderDateTime] = useState('');
   const [isPinned, setIsPinned] = useState(false);
   const [avatars, setAvatars] = useState<{ name: string; avatarUrl: string }[]>([]);
   const [attachments, setAttachments] = useState<
@@ -59,6 +91,7 @@ export const NoteDetailDrawer: React.FC<NoteDetailDrawerProps> = ({
       setTag(note.tag);
       setReminderDay(note.reminder?.day || 'Today');
       setReminderTime(note.reminder?.time || '12.00');
+      setReminderDateTime(getReminderDateTimeValue(note));
       setAvatars(note.avatars || []);
       setIsPinned(false);
       setIsSavedRecently(false);
@@ -102,6 +135,15 @@ export const NoteDetailDrawer: React.FC<NoteDetailDrawerProps> = ({
   const handleSave = () => {
     if (!title.trim()) return;
 
+    const reminderDate = new Date(reminderDateTime);
+    if (!reminderDateTime || Number.isNaN(reminderDate.getTime())) return;
+
+    const reminderDateLabel = `${padNumber(reminderDate.getDate())}/${padNumber(
+      reminderDate.getMonth() + 1
+    )}/${reminderDate.getFullYear()}`;
+    const reminderTimeValue = `${padNumber(reminderDate.getHours())}:${padNumber(
+      reminderDate.getMinutes()
+    )}`;
     const updatedNote: NoteItem = {
       ...note,
       title: title.trim(),
@@ -116,13 +158,16 @@ export const NoteDetailDrawer: React.FC<NoteDetailDrawerProps> = ({
       avatars,
       attachments,
       attachmentCount: attachments.length > 0 ? attachments.length : undefined,
+      day_notice: reminderDate.toISOString(),
       reminder: {
-        time: reminderTime,
-        day: reminderDay
+        time: reminderTimeValue,
+        day: reminderDateLabel
       }
     };
 
     onUpdateNote(updatedNote);
+    setReminderTime(reminderTimeValue);
+    setReminderDay(reminderDateLabel);
     setIsSavedRecently(true);
     setTimeout(() => setIsSavedRecently(false), 2000);
   };
@@ -378,11 +423,22 @@ export const NoteDetailDrawer: React.FC<NoteDetailDrawerProps> = ({
           <div className="drawer-section">
             <span className="drawer-section-title">Nhắc nhở</span>
             <div className="drawer-reminder-box">
-              <div className="drawer-reminder-info">
-                <Clock size={18} className="drawer-reminder-icon" />
-                <div className="drawer-reminder-text">
-                  <span className="drawer-reminder-time">{reminderTime}</span>
-                  <span className="drawer-reminder-day">{reminderDay}</span>
+              <div className="drawer-reminder-editor">
+                <label className="drawer-reminder-field">
+                  <span>Ngày và giờ</span>
+                  <input
+                    type="datetime-local"
+                    value={reminderDateTime}
+                    onChange={(event) => setReminderDateTime(event.target.value)}
+                    aria-label="Ngày và giờ nhắc nhở"
+                  />
+                </label>
+                <div className="drawer-reminder-info">
+                  <Clock size={18} className="drawer-reminder-icon" />
+                  <div className="drawer-reminder-text">
+                    <span className="drawer-reminder-time">{reminderTime}</span>
+                    <span className="drawer-reminder-day">{reminderDay}</span>
+                  </div>
                 </div>
               </div>
             </div>

@@ -1,5 +1,27 @@
 import type { NoteItem } from '../types/note';
 
+export function getReminderFromDayNotice(
+  dayNotice?: string | null
+): { time: string; day: string } | undefined {
+  if (!dayNotice) return undefined;
+
+  const date = new Date(dayNotice);
+  if (Number.isNaN(date.getTime())) return undefined;
+
+  return {
+    time: new Intl.DateTimeFormat('vi-VN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23'
+    }).format(date),
+    day: new Intl.DateTimeFormat('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }).format(date)
+  };
+}
+
 /**
  * Parses a note date string into day, month, year numbers.
  * Supported formats: DD.MM.YYYY, DD/MM/YYYY, YYYY-MM-DD
@@ -69,6 +91,19 @@ export function isNoteToday(note: NoteItem): boolean {
   const reminderDay = note.reminder?.day?.trim().toLowerCase();
   if (reminderDay === 'today' || reminderDay === 'hôm nay') {
     return true;
+  }
+
+  if (note.day_notice) {
+    const reminderDate = new Date(note.day_notice);
+    const now = new Date();
+    if (
+      !Number.isNaN(reminderDate.getTime()) &&
+      reminderDate.getDate() === now.getDate() &&
+      reminderDate.getMonth() === now.getMonth() &&
+      reminderDate.getFullYear() === now.getFullYear()
+    ) {
+      return true;
+    }
   }
 
   const parsed = parseNoteDate(note);
