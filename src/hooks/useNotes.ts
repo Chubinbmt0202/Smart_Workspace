@@ -12,56 +12,105 @@ export function useNotes() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedNote, setSelectedNote] = useState<NoteItem | null>(null);
 
+  // Load danh sách ghi chú từ API
+  const loadNotes = useCallback(async () => {
+    try {
+      const res = await noteApi.getAllNote();
+      const rawList = (res && res.data) ? res.data : (Array.isArray(res) ? res : []);
+      const formattedNotes: NoteItem[] = rawList.map((item: any) => {
+        let tagName = 'Chưa gắn tag';
+        if (typeof item.tag === 'string' && item.tag.trim()) {
+          tagName = item.tag.trim();
+        } else if (item.tag && typeof item.tag === 'object') {
+          tagName = item.tag.name || item.tag.label || item.tag.title || 'Chưa gắn tag';
+        } else if (item.category) {
+          tagName = item.category;
+        }
+
+        const tagLower = tagName.toLowerCase();
+        const tagType: 'personal' | 'projects' | 'custom' =
+          item.tagType || (tagLower === 'personal' ? 'personal' : tagLower === 'projects' ? 'projects' : 'custom');
+
+        return {
+          ...item,
+          id: String(item.id),
+          title: item.title || '',
+          content: item.content || '',
+          tag: tagName,
+          tagType,
+          date: item.date || (item.created_at ? new Date(item.created_at).toLocaleDateString('vi-VN') : '')
+        };
+      });
+
+      setNotes(formattedNotes);
+    } catch (err) {
+      console.error('Failed to load notes:', err);
+    }
+  }, []);
+
+  // Load danh sách tag từ API
+  const loadTags = useCallback(async () => {
+    try {
+      const res = await noteApi.getAllTags();
+      const rawList = (res && res.data) ? res.data : (Array.isArray(res) ? res : []);
+      const formattedTags: TagItem[] = rawList.map((item: any) => {
+        return {
+          ...item,
+          id: String(item.id),
+          label: item.name || item.label || item.title || 'Chưa gắn tag',
+          dotColor: item.color || item.dotColor || '#3b82f6'
+        };
+      });
+      setTags(formattedTags);
+    } catch (err) {
+      console.error('Failed to load tags:', err);
+    }
+  }, []);
+
+  // Load danh sách trong thùng rác từ API
+  const loadTrash = useCallback(async () => {
+    try {
+      const res = await noteApi.getTrashNotes();
+      const rawList = (res && res.data) ? res.data : (Array.isArray(res) ? res : []);
+      const formattedTrash: NoteItem[] = rawList.map((item: any) => {
+        const orig = item.original_data || {};
+        let tagName = 'Chưa gắn tag';
+        if (typeof orig.tag === 'string' && orig.tag.trim()) {
+          tagName = orig.tag.trim();
+        } else if (orig.tag && typeof orig.tag === 'object') {
+          tagName = orig.tag.name || orig.tag.label || orig.tag.title || 'Chưa gắn tag';
+        } else if (orig.category) {
+          tagName = orig.category;
+        }
+
+        const tagLower = tagName.toLowerCase();
+        const tagType: 'personal' | 'projects' | 'custom' =
+          orig.tagType || (tagLower === 'personal' ? 'personal' : tagLower === 'projects' ? 'projects' : 'custom');
+
+        return {
+          ...orig,
+          id: String(orig.id || item.item_id || item.id),
+          trashId: String(item.id),
+          title: item.title || orig.title || '',
+          content: orig.content || '',
+          tag: tagName,
+          tagType,
+          date: orig.created_at ? new Date(orig.created_at).toLocaleDateString('vi-VN') : '',
+          deletedAt: item.trashed_at || item.created_at || new Date().toISOString()
+        };
+      });
+
+      setDeletedNotes(formattedTrash);
+    } catch (err) {
+      console.error('Failed to load trash:', err);
+    }
+  }, []);
+
   useEffect(() => {
-    async function loadNotes() {
-      try {
-        const res = await noteApi.getAllNote();
-        console.log('Dữ liệu API trả về:', res);
-        const rawList = (res && res.data) ? res.data : (Array.isArray(res) ? res : []);
-        // Chuẩn hóa dữ liệu từ Supabase: nếu tag là Object thì lấy tên/label ra chuỗi string
-        const formattedNotes: NoteItem[] = rawList.map((item: any) => {
-          let tagName = 'Chưa gắn tag';
-          if (typeof item.tag === 'string' && item.tag.trim()) {
-            tagName = item.tag.trim();
-          } else if (item.tag && typeof item.tag === 'object') {
-            tagName = item.tag.name || item.tag.label || item.tag.title || 'Chưa gắn tag';
-          }
-
-          return {
-            ...item,
-            tag: tagName,
-            tagType: item.tagType || 'custom',
-            date: item.date || (item.created_at ? new Date(item.created_at).toLocaleDateString('vi-VN') : '')
-          };
-        });
-
-        setNotes(formattedNotes);
-      } catch (err) {
-        console.error('Failed to load notes:', err);
-      }
-    }
-
-    async function loadTags() {
-      try {
-        const res = await noteApi.getAllTags();
-        console.log('Dữ liệu API trả về:', res);
-        const rawList = (res && res.data) ? res.data : (Array.isArray(res) ? res : []);
-        const formattedTags: TagItem[] = rawList.map((item: any) => {
-          return {
-            ...item,
-            label: item.name || item.label || item.title || 'Chưa gắn tag',
-            dotColor: item.dotColor
-          };
-        });
-        setTags(formattedTags);
-      } catch (err) {
-        console.error('Failed to load tags:', err);
-      }
-    }
-
     loadNotes();
     loadTags();
-  }, []);
+    loadTrash();
+  }, [loadNotes, loadTags, loadTrash]);
 
   // Helper to ensure a tag exists in the tags collection
   const ensureTagExists = useCallback((tagLabel: string) => {
@@ -172,26 +221,85 @@ export function useNotes() {
     });
   }, [notes, activeCategory, searchQuery]);
 
-  const handleUpdateNote = useCallback((updatedNote: NoteItem) => {
-    setNotes((prev) =>
-      prev.map((n) => (n.id === updatedNote.id ? updatedNote : n))
-    );
-    setSelectedNote(updatedNote);
-    if (updatedNote.tag) {
-      ensureTagExists(updatedNote.tag);
-    }
-  }, [ensureTagExists]);
+  // Cập nhật ghi chú (PUT /notes/:id)
+  const handleUpdateNote = useCallback(async (updatedNote: NoteItem) => {
+    try {
+      const matchedTag = tags.find(
+        (t) => t.label.toLowerCase() === updatedNote.tag?.toLowerCase()
+      );
 
-  const handleAddNote = useCallback((newNote: NoteItem) => {
-    setNotes((prev) => [newNote, ...prev]);
-    if (newNote.tag) {
-      ensureTagExists(newNote.tag);
-    }
-  }, [ensureTagExists]);
+      const payload = {
+        title: updatedNote.title,
+        content: updatedNote.content,
+        category: updatedNote.tag || 'Personal',
+        tag_id: matchedTag ? matchedTag.id : null,
+      };
 
-  const handleDeleteNote = useCallback((id: string) => {
-    setNotes((prevNotes) => {
-      const targetNote = prevNotes.find((n) => n.id === id);
+      await noteApi.updateNote(updatedNote.id, payload);
+    } catch (err) {
+      console.error('Failed to update note via API:', err);
+    } finally {
+      setNotes((prev) =>
+        prev.map((n) => (n.id === updatedNote.id ? updatedNote : n))
+      );
+      setSelectedNote(updatedNote);
+      if (updatedNote.tag) {
+        ensureTagExists(updatedNote.tag);
+      }
+    }
+  }, [ensureTagExists, tags]);
+
+  // Tạo mới ghi chú (POST /notes)
+  const handleAddNote = useCallback(async (newNote: NoteItem) => {
+    try {
+      const matchedTag = tags.find(
+        (t) => t.label.toLowerCase() === newNote.tag?.toLowerCase()
+      );
+
+      const payload = {
+        title: newNote.title,
+        content: newNote.content,
+        category: newNote.tag || 'Personal',
+        tag_id: matchedTag ? matchedTag.id : null,
+      };
+
+      const res = await noteApi.createNote(payload);
+      const created = res?.data || res;
+      const createdId = created?.id ? String(created.id) : newNote.id;
+
+      const formattedNote: NoteItem = {
+        ...newNote,
+        id: createdId,
+        date: created?.created_at
+          ? new Date(created.created_at).toLocaleDateString('vi-VN')
+          : newNote.date,
+      };
+
+      setNotes((prev) => [formattedNote, ...prev]);
+      if (newNote.tag) {
+        ensureTagExists(newNote.tag);
+      }
+    } catch (err) {
+      console.error('Failed to create note via API:', err);
+      setNotes((prev) => [newNote, ...prev]);
+      if (newNote.tag) {
+        ensureTagExists(newNote.tag);
+      }
+    }
+  }, [ensureTagExists, tags]);
+
+  // Đưa vào thùng rác (PATCH /notes/:id/trash)
+  const handleDeleteNote = useCallback(async (id: string) => {
+    const targetNote = notes.find((n) => n.id === id);
+    // Optimistic UI: xóa khỏi danh sách chính
+    setNotes((prev) => prev.filter((n) => n.id !== id));
+    setSelectedNote((prevSelected) => (prevSelected?.id === id ? null : prevSelected));
+
+    try {
+      await noteApi.moveToTrash(id);
+      await loadTrash();
+    } catch (err) {
+      console.error('Failed to move note to trash via API:', err);
       if (targetNote) {
         const deletedNote: NoteItem = {
           ...targetNote,
@@ -199,103 +307,159 @@ export function useNotes() {
         };
         setDeletedNotes((prevDel) => [deletedNote, ...prevDel]);
       }
-      return prevNotes.filter((note) => note.id !== id);
-    });
-    setSelectedNote((prevSelected) => (prevSelected?.id === id ? null : prevSelected));
-  }, []);
+    }
+  }, [notes, loadTrash]);
 
-  const handleRestoreNote = useCallback((id: string) => {
-    setDeletedNotes((prevDel) => {
-      const target = prevDel.find((n) => n.id === id);
+  // Khôi phục từ thùng rác (POST /trash/:id/restore)
+  const handleRestoreNote = useCallback(async (id: string) => {
+    const target = deletedNotes.find((n) => n.id === id || n.trashId === id);
+    const trashIdToRestore = target?.trashId || id;
+
+    // Optimistic update
+    setDeletedNotes((prevDel) => prevDel.filter((n) => n.id !== id && n.trashId !== id));
+
+    try {
+      await noteApi.restoreNoteFromTrash(trashIdToRestore);
+      await loadNotes();
+    } catch (err) {
+      console.error('Failed to restore note via API:', err);
       if (target) {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { deletedAt: _, ...restoredNote } = target;
+        const { deletedAt: _, trashId: __, ...restoredNote } = target;
         setNotes((prevNotes) => [restoredNote, ...prevNotes]);
       }
-      return prevDel.filter((n) => n.id !== id);
-    });
-  }, []);
+    }
+  }, [deletedNotes, loadNotes]);
 
-  const handlePermanentDeleteNote = useCallback((id: string) => {
-    setDeletedNotes((prevDel) => prevDel.filter((n) => n.id !== id));
-  }, []);
+  // Xóa vĩnh viễn 1 mục khỏi thùng rác (DELETE /trash/:id)
+  const handlePermanentDeleteNote = useCallback(async (id: string) => {
+    const target = deletedNotes.find((n) => n.id === id || n.trashId === id);
+    const trashIdToDelete = target?.trashId || id;
 
-  const handleEmptyRecycleBin = useCallback(() => {
+    setDeletedNotes((prevDel) => prevDel.filter((n) => n.id !== id && n.trashId !== id));
+
+    try {
+      await noteApi.permanentlyDeleteTrashNote(trashIdToDelete);
+    } catch (err) {
+      console.error('Failed to permanently delete note via API:', err);
+    }
+  }, [deletedNotes]);
+
+  // Dọn sạch thùng rác
+  const handleEmptyRecycleBin = useCallback(async () => {
+    const itemsToDelete = [...deletedNotes];
     setDeletedNotes([]);
-  }, []);
 
-  const handleAddTag = useCallback((newTagOrName: TagItem | string) => {
-    if (typeof newTagOrName === 'string') {
-      const trimmed = newTagOrName.trim();
-      if (!trimmed) return;
-      ensureTagExists(trimmed);
-      setActiveCategory(trimmed);
-    } else {
+    try {
+      await Promise.all(
+        itemsToDelete.map((item) =>
+          noteApi.permanentlyDeleteTrashNote(item.trashId || item.id)
+        )
+      );
+    } catch (err) {
+      console.error('Failed to empty recycle bin via API:', err);
+    }
+  }, [deletedNotes]);
+
+  // Thêm tag mới (POST /tags)
+  const handleAddTag = useCallback(async (newTagOrName: TagItem | string) => {
+    const tagLabel = typeof newTagOrName === 'string' ? newTagOrName.trim() : newTagOrName.label.trim();
+    if (!tagLabel) return;
+
+    const dotColor = typeof newTagOrName === 'object' && newTagOrName.dotColor
+      ? newTagOrName.dotColor
+      : TAG_COLOR_PALETTE[tags.length % TAG_COLOR_PALETTE.length];
+
+    try {
+      const res = await noteApi.createTag({ name: tagLabel, color: dotColor });
+      const createdTag = res?.data || res;
+      const createdId = createdTag?.id
+        ? String(createdTag.id)
+        : (typeof newTagOrName === 'object' ? newTagOrName.id : tagLabel.toLowerCase().replace(/\s+/g, '-'));
+
+      const newTagItem: TagItem = {
+        id: createdId,
+        label: createdTag?.name || tagLabel,
+        dotColor: createdTag?.color || dotColor
+      };
+
       setTags((prev) => {
-        if (
-          prev.some(
-            (t) =>
-              t.id === newTagOrName.id ||
-              t.label.toLowerCase() === newTagOrName.label.toLowerCase()
-          )
-        ) {
+        if (prev.some((t) => t.id === createdId || t.label.toLowerCase() === tagLabel.toLowerCase())) {
           return prev;
         }
-        return [...prev, newTagOrName];
+        return [...prev, newTagItem];
       });
-      setActiveCategory(newTagOrName.label);
-    }
-  }, [ensureTagExists]);
-
-  const handleDeleteTag = useCallback((tagId: string) => {
-    setTags((prev) => {
-      const tagToDelete = prev.find((t) => t.id === tagId);
-      if (
-        tagToDelete &&
-        activeCategory.toLowerCase() === tagToDelete.label.toLowerCase()
-      ) {
-        setActiveCategory('All');
+      setActiveCategory(tagLabel);
+    } catch (err) {
+      console.error('Failed to create tag via API:', err);
+      if (typeof newTagOrName === 'string') {
+        ensureTagExists(tagLabel);
+        setActiveCategory(tagLabel);
+      } else {
+        setTags((prev) => {
+          if (
+            prev.some(
+              (t) =>
+                t.id === newTagOrName.id ||
+                t.label.toLowerCase() === newTagOrName.label.toLowerCase()
+            )
+          ) {
+            return prev;
+          }
+          return [...prev, newTagOrName];
+        });
+        setActiveCategory(newTagOrName.label);
       }
-      return prev.filter((t) => t.id !== tagId);
-    });
+    }
+  }, [tags, ensureTagExists]);
+
+  // Xóa tag (DELETE /tags/:id)
+  const handleDeleteTag = useCallback(async (tagId: string) => {
+    try {
+      await noteApi.deleteTag(tagId);
+    } catch (err) {
+      console.error('Failed to delete tag via API:', err);
+    } finally {
+      setTags((prev) => {
+        const tagToDelete = prev.find((t) => t.id === tagId);
+        if (
+          tagToDelete &&
+          activeCategory.toLowerCase() === tagToDelete.label.toLowerCase()
+        ) {
+          setActiveCategory('All');
+        }
+        return prev.filter((t) => t.id !== tagId);
+      });
+    }
   }, [activeCategory]);
 
-  const handleRenameTag = useCallback((tagId: string, newName: string) => {
+  // Cập nhật tên tag (PUT /tags/:id)
+  const handleRenameTag = useCallback(async (tagId: string, newName: string) => {
     const trimmed = newName.trim();
     if (!trimmed) return;
 
-    setTags((prev) =>
-      prev.map((t) => (t.id === tagId ? { ...t, label: trimmed } : t))
-    );
+    try {
+      await noteApi.updateTag(tagId, { name: trimmed });
+    } catch (err) {
+      console.error('Failed to rename tag via API:', err);
+    } finally {
+      setTags((prev) =>
+        prev.map((t) => (t.id === tagId ? { ...t, label: trimmed } : t))
+      );
 
-    setNotes((prev) =>
-      prev.map((n) =>
-        n.tag.toLowerCase() === tagId.toLowerCase()
-          ? { ...n, tag: trimmed }
-          : n
-      )
-    );
-
-    setActiveCategory((prevActive) =>
-      prevActive.toLowerCase() === tagId.toLowerCase() ? trimmed : prevActive
-    );
-  }, []);
-
-  const handleAddTagClick = useCallback((note: NoteItem) => {
-    const customTag = prompt('Nhập tag mới cho ghi chú này:', 'Idea');
-    if (customTag && customTag.trim()) {
-      const trimmedTag = customTag.trim();
       setNotes((prev) =>
         prev.map((n) =>
-          n.id === note.id
-            ? { ...n, tag: trimmedTag, tagType: 'custom' }
+          n.tag.toLowerCase() === tagId.toLowerCase()
+            ? { ...n, tag: trimmed }
             : n
         )
       );
-      ensureTagExists(trimmedTag);
-      setActiveCategory(trimmedTag);
+
+      setActiveCategory((prevActive) =>
+        prevActive.toLowerCase() === tagId.toLowerCase() ? trimmed : prevActive
+      );
     }
-  }, [ensureTagExists]);
+  }, []);
 
   return {
     notes,
@@ -318,6 +482,5 @@ export function useNotes() {
     handleAddTag,
     handleDeleteTag,
     handleRenameTag,
-    handleAddTagClick
   };
 }

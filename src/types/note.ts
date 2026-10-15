@@ -23,6 +23,7 @@ export interface NoteItem {
     isUrgent?: boolean;
   };
   deletedAt?: string;
+  trashId?: string;
 }
 
 export interface NotificationItem {

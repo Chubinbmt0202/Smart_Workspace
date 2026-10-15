@@ -177,11 +177,8 @@ export const NoteDetailDrawer: React.FC<NoteDetailDrawerProps> = ({
     if (tag === 'Business') return { backgroundColor: '#ef4444', color: '#fff' };
     return { backgroundColor: '#8b5cf6', color: '#fff' };
   };
-
-  const baseTagNames = ['Personal', 'Projects', 'Business'];
   const allTagNames = Array.from(
     new Set([
-      ...baseTagNames,
       ...availableTags.map((t) => t.label)
     ])
   );
@@ -276,7 +273,7 @@ export const NoteDetailDrawer: React.FC<NoteDetailDrawerProps> = ({
 
           {/* Tag Selector */}
           <div className="drawer-section">
-            <span className="drawer-section-title">Nhãn (Tag)</span>
+            <span className="drawer-section-title">Tag</span>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <select
                 className="form-select"

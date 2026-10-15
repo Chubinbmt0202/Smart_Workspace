@@ -46,8 +46,7 @@ export function Home({ onLogout }: { onLogout: () => void }) {
     handleEmptyRecycleBin,
     handleAddTag,
     handleDeleteTag,
-    handleRenameTag,
-    handleAddTagClick
+    handleRenameTag
   } = useNotes();
 
   const todayNotes = useMemo(() => notes.filter(isNoteToday), [notes]);
@@ -202,7 +201,6 @@ export function Home({ onLogout }: { onLogout: () => void }) {
                   note={note}
                   onClick={setSelectedNote}
                   onDeleteNote={handleDeleteNote}
-                  onAddTagClick={handleAddTagClick}
                 />
               ))}
             </div>
