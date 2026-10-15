@@ -83,7 +83,12 @@ export function useNotes() {
   const loadTags = useCallback(async () => {
     try {
       const res = await noteApi.getAllTags();
-      const rawList = (res && res.data) ? res.data : (Array.isArray(res) ? res : []);
+      const rawList = res.data;
+      if (res.rejectedCount > 0) {
+        notifyError(
+          'Máy chủ trả về tag không thuộc tài khoản này. Các tag đó đã bị ẩn; cần sửa bộ lọc user_id ở backend.'
+        );
+      }
       const formattedTags: TagItem[] = rawList.map((item: any) => {
         return {
           ...item,
@@ -95,8 +100,9 @@ export function useNotes() {
       setTags(formattedTags);
     } catch (err) {
       console.error('Failed to load tags:', err);
+      notifyError('Không thể tải danh sách tag an toàn. Vui lòng thử lại hoặc liên hệ quản trị viên.');
     }
-  }, []);
+  }, [notifyError]);
 
   // Load danh sách trong thùng rác từ API
   const loadTrash = useCallback(async (showLoading = true) => {

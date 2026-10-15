@@ -13,7 +13,6 @@ import {
 } from '../components';
 import { SuccessToast } from '../components/SuccessToast';
 import { useNotes } from '../hooks/useNotes';
-import { USER_PROFILE } from '../data/mockNotes';
 import { getNoteReminderStatus } from '../utils/date';
 import type { NotificationItem } from '../types';
 
@@ -183,8 +182,8 @@ export function Home({ onLogout }: { onLogout: () => void }) {
             onCloseNotifications={() => setIsNotificationsOpen(false)}
             onToggleUserPopover={handleToggleUserPopover}
             onCloseUserPopover={() => setIsUserPopoverOpen(false)}
-            userName={USER_PROFILE.name}
-            userAvatar={USER_PROFILE.avatarUrl}
+            userName={localStorage.displayName}
+            userAvatar={localStorage.photoURL}
             userEmail={localStorage.getItem('email') ?? undefined}
             onLogout={onLogout}
           />

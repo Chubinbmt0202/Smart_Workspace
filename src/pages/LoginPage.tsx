@@ -1,31 +1,56 @@
 import { useState } from "react";
+import { signInWithGoogle } from "../services/firebase";
+import { noteApi } from "../services/api";
 
 export function LoginPage({ onLogin }: { onLogin: () => void }) {
-  const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [isGoogleSigningIn, setIsGoogleSigningIn] = useState(false);
   const [error, setError] = useState("");
 
-  const handleEmailChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setEmail(event.target.value);
-  }
-
-  const handlePasswordChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setPassword(event.target.value);
-  }
-
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleGoogleSignIn = async () => {
+    setError("");
+    setIsGoogleSigningIn(true);
 
     try {
-      localStorage.setItem("email", email.trim());
+      const user = await signInWithGoogle();
+      const { userId } = await noteApi.loginUser({
+        email: user.email,
+        displayName: user.displayName ?? "",
+        photoURL: user.photoURL ?? ""
+      });
+
+      localStorage.setItem("userId", userId);
+      localStorage.setItem("email", user.email);
       localStorage.setItem("isLoggedIn", "true");
-      setError("");
+      if (user.displayName) localStorage.setItem("displayName", user.displayName);
+      if (user.photoURL) localStorage.setItem("photoURL", user.photoURL);
       onLogin();
-    } catch {
-      setError("Không thể lưu phiên đăng nhập. Vui lòng kiểm tra cài đặt trình duyệt.");
+    } catch (signInError) {
+      console.error("Google sign-in or profile save failed:", signInError);
+      const errorCode =
+        typeof signInError === "object" && signInError !== null && "code" in signInError
+          ? String(signInError.code)
+          : "";
+
+      if (signInError instanceof Error && signInError.message.includes("chưa được cấu hình")) {
+        setError(signInError.message);
+      } else if (
+        signInError instanceof Error &&
+        signInError.message.startsWith("Failed to save user profile:")
+      ) {
+        setError(`Đăng nhập Google thành công nhưng không lưu được hồ sơ lên máy chủ. ${signInError.message}`);
+      } else if (errorCode === "auth/popup-closed-by-user") {
+        setError("Bạn đã đóng cửa sổ đăng nhập Google.");
+      } else if (errorCode === "auth/unauthorized-domain") {
+        setError("Domain hiện tại chưa được cho phép trong Firebase Authentication.");
+      } else if (errorCode === "auth/popup-blocked") {
+        setError("Trình duyệt đã chặn cửa sổ đăng nhập. Hãy cho phép popup rồi thử lại.");
+      } else {
+        setError("Không thể đăng nhập bằng Google. Vui lòng thử lại.");
+      }
+    } finally {
+      setIsGoogleSigningIn(false);
     }
-  }
+  };
 
   return (
     <div className="login-page">
@@ -38,56 +63,18 @@ export function LoginPage({ onLogin }: { onLogin: () => void }) {
             to your account
           </p>
 
-          <form
-            className="login-form"
-            onSubmit={handleSubmit}
-          >
-            <label className="field" aria-label="Email or phone">
-              <input
-                type="text"
-                placeholder="Enter Email"
-                value={email}
-                required
-                onChange={handleEmailChange}
-              />
-            </label>
-
-            <label className="field field--password" aria-label="Password">
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                required
-                onChange={handlePasswordChange}
-                placeholder="Password"
-              />
-              <button
-                type="button"
-                className="field-toggle"
-                onClick={() => setShowPassword((prev) => !prev)}
-              >
-                {showPassword ? "Hide" : "Show"}
-              </button>
-            </label>
-
-            <button type="submit" className="sign-in-button">
-              Sign in
+          <div className="login-form">
+            <button
+              type="button"
+              className="social-button"
+              onClick={handleGoogleSignIn}
+              disabled={isGoogleSigningIn}
+            >
+              <span className="google-mark" aria-hidden="true">G</span>
+              {isGoogleSigningIn ? "Đang kết nối Google..." : "Đăng nhập bằng Google"}
             </button>
             {error && <p className="login-error" role="alert">{error}</p>}
-
-            <div className="divider">
-              <span>Or Sign in with</span>
-            </div>
-
-            <button type="button" className="social-button">
-              Đăng nhập bằng Google
-            </button>
-          </form>
-
-          <p className="register-copy">
-            Don&apos;t have an account?{" "}
-            <button type="button">Register Now</button>
-          </p>
-
+          </div>
 
         </div>
       </div>

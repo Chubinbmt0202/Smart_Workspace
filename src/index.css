@@ -188,6 +188,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+  width: 100%;
   height: 42px;
   border: 1px solid rgba(29, 29, 29, 0.12);
   background: rgba(255, 255, 255, 0.4);
@@ -196,6 +197,31 @@
   color: rgba(29, 29, 29, 0.8);
   font-weight: 600;
   cursor: pointer;
+}
+
+.social-button:hover:not(:disabled) {
+  background: #ffffff;
+  border-color: rgba(29, 29, 29, 0.24);
+}
+
+.social-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.google-mark {
+  font-family: Arial, sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: #4285f4;
+}
+
+.login-error {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  text-align: center;
 }
 
 .social-icon {
