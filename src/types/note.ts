@@ -1,14 +1,12 @@
+import type { NoteAttachment } from '../utils/attachment';
+
 export interface NoteItem {
   id: string;
   tag: string;
   tagType: 'personal' | 'projects' | 'custom';
   date: string;
   attachmentCount?: number;
-  attachments?: {
-    name: string;
-    size?: string;
-    type?: string;
-  }[];
+  attachments?: NoteAttachment[];
   title: string;
   content: string;
   day_notice?: string | null;

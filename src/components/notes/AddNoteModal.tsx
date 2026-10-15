@@ -10,16 +10,18 @@ import {
   Calendar,
   Tag as TagIcon,
   Check,
-  Plus
+  Plus,
+  Eye
 } from 'lucide-react';
 import type { NoteItem } from '../../types/note';
 import type { TagItem } from '../../types/tag';
+import { AttachmentPreview } from '../AttachmentPreview';
+import {
+  MAX_ATTACHMENT_SIZE_BYTES,
+  type NoteAttachment
+} from '../../utils/attachment';
 
-export interface UploadedDoc {
-  name: string;
-  size: string;
-  type: string;
-}
+export type UploadedDoc = NoteAttachment;
 
 export interface AddNoteModalProps {
   isOpen: boolean;
@@ -65,6 +67,8 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
   // 5. Upload Document
   const [uploadedFiles, setUploadedFiles] = useState<UploadedDoc[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [fileError, setFileError] = useState('');
+  const [previewFile, setPreviewFile] = useState<UploadedDoc | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sync category & defaults when modal opens
@@ -103,17 +107,41 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
   const handleFilesSelected = (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
-    const newDocs: UploadedDoc[] = Array.from(files).map((f) => ({
-      name: f.name,
-      size: formatFileSize(f.size),
-      type: f.type
-    }));
+    const selectedFiles = Array.from(files);
+    const oversizedFiles = selectedFiles.filter(
+      (file) => file.size > MAX_ATTACHMENT_SIZE_BYTES
+    );
+    if (oversizedFiles.length > 0) {
+      setFileError(
+        `Mỗi tệp phải có dung lượng tối đa 10 MB. Tệp vượt giới hạn: ${oversizedFiles
+          .map((file) => file.name)
+          .join(', ')}.`
+      );
+    } else {
+      setFileError('');
+    }
+
+    const newDocs: UploadedDoc[] = selectedFiles
+      .filter((file) => file.size <= MAX_ATTACHMENT_SIZE_BYTES)
+      .map((file) => ({
+        name: file.name,
+        size: formatFileSize(file.size),
+        type: file.type,
+        url: URL.createObjectURL(file)
+      }));
 
     setUploadedFiles((prev) => [...prev, ...newDocs]);
   };
 
   const handleRemoveFile = (index: number) => {
+    const attachment = uploadedFiles[index];
+    if (attachment?.url?.startsWith('blob:')) {
+      URL.revokeObjectURL(attachment.url);
+    }
     setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
+    setPreviewFile((prev) => (
+      prev && uploadedFiles[index]?.name === prev.name ? null : prev
+    ));
   };
 
   const getFileIcon = (type: string, name: string) => {
@@ -357,7 +385,7 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
           <div className="form-group">
             <label>
               <UploadCloud size={14} />
-              Tải lên tài liệu (Upload Document)
+              Tải lên tài liệu (tối đa 10 MB/tệp)
             </label>
 
             {/* Hidden file input */}
@@ -365,8 +393,12 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
               ref={fileInputRef}
               type="file"
               multiple
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.png,.jpg,.jpeg,.gif,.webp"
               style={{ display: 'none' }}
-              onChange={(e) => handleFilesSelected(e.target.files)}
+              onChange={(e) => {
+                handleFilesSelected(e.target.files);
+                e.target.value = '';
+              }}
             />
 
             {/* Dropzone */}
@@ -392,17 +424,22 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
                 <span className="upload-link">chọn từ thiết bị</span>
               </p>
               <span className="upload-subtext">
-                Hỗ trợ PDF, DOCX, XLSX, TXT, PNG, JPG (Có thể chọn nhiều tệp)
+                Hỗ trợ PDF, DOCX, XLSX, TXT, PNG, JPG; tối đa 10 MB mỗi tệp
               </span>
             </div>
+            {fileError && (
+              <p className="upload-file-error" role="alert">
+                {fileError}
+              </p>
+            )}
 
             {/* Uploaded Files Preview List */}
             {uploadedFiles.length > 0 && (
               <div className="uploaded-files-list">
                 {uploadedFiles.map((file, index) => (
-                  <div key={index} className="uploaded-file-item">
+                  <div key={`${file.name}-${index}`} className="uploaded-file-item">
                     <div className="file-item-left">
-                      {getFileIcon(file.type, file.name)}
+                      {getFileIcon(file.type ?? '', file.name)}
                       <div className="file-item-info">
                         <span className="file-item-name" title={file.name}>
                           {file.name}
@@ -410,15 +447,26 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
                         <span className="file-item-size">{file.size}</span>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      className="btn-remove-file"
-                      onClick={() => handleRemoveFile(index)}
-                      title="Xóa tệp này"
-                      aria-label="Xóa tệp này"
-                    >
-                      <X size={15} />
-                    </button>
+                    <div className="uploaded-file-actions">
+                      <button
+                        type="button"
+                        className="btn-preview-file"
+                        onClick={() => setPreviewFile(file)}
+                        title="Xem trước tệp"
+                        aria-label={`Xem trước ${file.name}`}
+                      >
+                        <Eye size={15} />
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-remove-file"
+                        onClick={() => handleRemoveFile(index)}
+                        title="Xóa tệp này"
+                        aria-label="Xóa tệp này"
+                      >
+                        <X size={15} />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -441,6 +489,12 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
           </div>
         </form>
       </div>
+      {previewFile && (
+        <AttachmentPreview
+          attachment={previewFile}
+          onClose={() => setPreviewFile(null)}
+        />
+      )}
     </div>
   );
 };

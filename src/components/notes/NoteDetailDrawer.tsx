@@ -13,12 +13,18 @@ import {
   FileText,
   FileImage,
   FileSpreadsheet,
-  File
+  File,
+  Eye
 } from 'lucide-react';
 import type { NoteItem } from '../../types/note';
 import type { TagItem } from '../../types/tag';
 import { getTagColor, getTagColorClass } from '../../utils/tagColor';
 import { parseNoteDate } from '../../utils/date';
+import { AttachmentPreview } from '../AttachmentPreview';
+import {
+  MAX_ATTACHMENT_SIZE_BYTES,
+  type NoteAttachment
+} from '../../utils/attachment';
 
 const padNumber = (value: number) => String(value).padStart(2, '0');
 
@@ -78,8 +84,11 @@ export const NoteDetailDrawer: React.FC<NoteDetailDrawerProps> = ({
   const [isPinned, setIsPinned] = useState(false);
   const [avatars, setAvatars] = useState<{ name: string; avatarUrl: string }[]>([]);
   const [attachments, setAttachments] = useState<
-    { name: string; size?: string; type?: string }[]
+    NoteAttachment[]
   >([]);
+  const [attachmentError, setAttachmentError] = useState('');
+  const [previewAttachment, setPreviewAttachment] =
+    useState<NoteAttachment | null>(null);
   const [isSavedRecently, setIsSavedRecently] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -180,11 +189,32 @@ export const NoteDetailDrawer: React.FC<NoteDetailDrawerProps> = ({
   };
 
   const handleRemoveAttachment = (index: number) => {
+    const attachment = attachments[index];
+    if (attachment?.url?.startsWith('blob:')) {
+      URL.revokeObjectURL(attachment.url);
+    }
     setAttachments((prev) => prev.filter((_, i) => i !== index));
+    setPreviewAttachment((prev) => (
+      prev && attachments[index]?.name === prev.name ? null : prev
+    ));
   };
 
   const handleAddFiles = (files: FileList | null) => {
     if (!files || files.length === 0) return;
+
+    const selectedFiles = Array.from(files);
+    const oversizedFiles = selectedFiles.filter(
+      (file) => file.size > MAX_ATTACHMENT_SIZE_BYTES
+    );
+    if (oversizedFiles.length > 0) {
+      setAttachmentError(
+        `Mỗi tệp phải có dung lượng tối đa 10 MB. Tệp vượt giới hạn: ${oversizedFiles
+          .map((file) => file.name)
+          .join(', ')}.`
+      );
+    } else {
+      setAttachmentError('');
+    }
 
     const formatSize = (bytes: number): string => {
       if (bytes < 1024) return `${bytes} B`;
@@ -192,11 +222,14 @@ export const NoteDetailDrawer: React.FC<NoteDetailDrawerProps> = ({
       return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
     };
 
-    const newFiles = Array.from(files).map((f) => ({
-      name: f.name,
-      size: formatSize(f.size),
-      type: f.type
-    }));
+    const newFiles: NoteAttachment[] = selectedFiles
+      .filter((file) => file.size <= MAX_ATTACHMENT_SIZE_BYTES)
+      .map((file) => ({
+        name: file.name,
+        size: formatSize(file.size),
+        type: file.type,
+        url: URL.createObjectURL(file)
+      }));
 
     setAttachments((prev) => [...prev, ...newFiles]);
   };
@@ -366,15 +399,25 @@ export const NoteDetailDrawer: React.FC<NoteDetailDrawerProps> = ({
                 ref={fileInputRef}
                 type="file"
                 multiple
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.png,.jpg,.jpeg,.gif,.webp"
                 style={{ display: 'none' }}
-                onChange={(e) => handleAddFiles(e.target.files)}
+                onChange={(e) => {
+                  handleAddFiles(e.target.files);
+                  e.target.value = '';
+                }}
               />
             </div>
+
+            {attachmentError && (
+              <p className="upload-file-error" role="alert">
+                {attachmentError}
+              </p>
+            )}
 
             {attachments.length > 0 ? (
               <div className="drawer-attachments-list">
                 {attachments.map((file, idx) => (
-                  <div key={idx} className="drawer-attachment-card">
+                  <div key={`${file.name}-${idx}`} className="drawer-attachment-card">
                     <div className="attachment-card-left">
                       <div className="attachment-icon-box">
                         {getFileIcon(file.type, file.name)}
@@ -392,7 +435,22 @@ export const NoteDetailDrawer: React.FC<NoteDetailDrawerProps> = ({
                       <button
                         type="button"
                         className="btn-attachment-action"
-                        onClick={() => alert(`Đang tải xuống: ${file.name}`)}
+                        onClick={() => setPreviewAttachment(file)}
+                        title={`Xem trước ${file.name}`}
+                        aria-label={`Xem trước ${file.name}`}
+                      >
+                        <Eye size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-attachment-action"
+                        onClick={() => {
+                          if (file.url) {
+                            window.open(file.url, '_blank', 'noopener,noreferrer');
+                          } else {
+                            setPreviewAttachment(file);
+                          }
+                        }}
                         title="Tải xuống tệp"
                         aria-label="Tải xuống"
                       >
@@ -472,6 +530,12 @@ export const NoteDetailDrawer: React.FC<NoteDetailDrawerProps> = ({
           </div>
         </div>
       </aside>
+      {previewAttachment && (
+        <AttachmentPreview
+          attachment={previewAttachment}
+          onClose={() => setPreviewAttachment(null)}
+        />
+      )}
     </>
   );
 };
