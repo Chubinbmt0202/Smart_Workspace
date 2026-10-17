@@ -117,6 +117,21 @@ export const noteApi = {
     return { userId: getLoginUserId(result) };
   },
 
+  createDesktopAuthTicket: async (payload: {
+    idToken: string;
+    state: string;
+    codeChallenge: string;
+  }) => {
+    const response = await fetch(`${API_BASE_URL_WITHOUT_TRAILING_SLASH}/users/desktop-auth/tickets`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+    return await handleResponse(response, 'Failed to start desktop sign-in');
+  },
+
   // ==================== GHI CHÚ (NOTES) ====================
   // Lấy tất cả ghi chú: GET /notes
   getAllNote: async () => {

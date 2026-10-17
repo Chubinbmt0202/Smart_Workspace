@@ -38,7 +38,8 @@ export async function signInWithGoogle() {
     alert: result.user.emailVerified ? 'Đăng nhập thành công!' : 'Đăng nhập thành công, nhưng email chưa được xác minh.',
     email: result.user.email,
     displayName: result.user.displayName,
-    photoURL: result.user.photoURL
+    photoURL: result.user.photoURL,
+    idToken: await result.user.getIdToken()
   };
 }
 

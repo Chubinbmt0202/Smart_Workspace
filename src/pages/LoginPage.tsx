@@ -11,7 +11,49 @@ export function LoginPage({ onLogin }: { onLogin: () => void }) {
     setIsGoogleSigningIn(true);
 
     try {
+      if (window.desktopAuth) {
+        const desktopUser = await window.desktopAuth.startGoogleLogin();
+        const { userId } = await noteApi.loginUser({
+          email: desktopUser.email,
+          displayName: desktopUser.displayName ?? "",
+          photoURL: desktopUser.photoURL ?? ""
+        });
+
+        localStorage.setItem("userId", userId);
+        localStorage.setItem("email", desktopUser.email);
+        localStorage.setItem("isLoggedIn", "true");
+        if (desktopUser.displayName) localStorage.setItem("displayName", desktopUser.displayName);
+        if (desktopUser.photoURL) localStorage.setItem("photoURL", desktopUser.photoURL);
+        onLogin();
+        return;
+      }
+
       const user = await signInWithGoogle();
+      const desktopParams = new URLSearchParams(window.location.search);
+      const desktopState = desktopParams.get("state");
+      const codeChallenge = desktopParams.get("code_challenge");
+
+      if (
+        desktopParams.get("desktop") === "1" &&
+        desktopState &&
+        codeChallenge &&
+        /^[A-Za-z0-9_-]{43}$/.test(desktopState) &&
+        /^[A-Za-z0-9_-]{43}$/.test(codeChallenge)
+      ) {
+        const response = await noteApi.createDesktopAuthTicket({
+          idToken: user.idToken,
+          state: desktopState,
+          codeChallenge,
+        }) as { data?: { code?: string } };
+        const code = response.data?.code;
+        if (!code || !/^[A-Za-z0-9_-]{43}$/.test(code)) {
+          throw new Error("Máy chủ không tạo được mã đăng nhập desktop hợp lệ.");
+        }
+
+        window.location.href = `smartworkspace://auth?code=${encodeURIComponent(code)}&state=${encodeURIComponent(desktopState)}`;
+        return;
+      }
+
       const { userId } = await noteApi.loginUser({
         email: user.email,
         displayName: user.displayName ?? "",
